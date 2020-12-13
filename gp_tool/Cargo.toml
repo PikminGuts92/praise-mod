@@ -3,3 +3,8 @@ name = "gp_tool"
 version = "0.1.0"
 authors = ["PikminGuts92"]
 edition = "2018"
+
+[dependencies]
+clap = "3.0.0-beta.1"
+praise_mod_lib = { path = "../praise_mod_lib" }
+thiserror = "1.0.20"
