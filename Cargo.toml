@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "gp_tool",
+    "praise_mod_lib"
+]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 'z'  # Optimize for size
