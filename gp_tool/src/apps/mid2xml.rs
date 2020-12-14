@@ -15,10 +15,9 @@ pub struct Mid2XmlApp {
 impl SubApp for Mid2XmlApp {
     fn process(&mut self) -> Result<(), Box<dyn Error>> {
         let midi_path = Path::new(&self.mid_path);
-        let mut midi_reader = MidiReader::from_path(midi_path)?;
+        let mut midi_file = MidiFile::from_path(midi_path)?;
 
         println!("This is mid2xml app!");
-
         Ok(())
     }
 }

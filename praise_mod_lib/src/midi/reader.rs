@@ -1,14 +1,10 @@
 //use ghakuf::messages::MidiEvent;
 use ghakuf::messages::*;
 use ghakuf::reader::*;
+use crate::midi::shared::*;
+use crate::midi::smf::*;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-
-#[derive(Debug)]
-struct MidiInfo {
-    format: u16,
-    ticks_per_quarter: u16, // Usually 480
-}
+use std::path::Path;
 
 #[derive(Clone, Copy, Debug)]
 struct PendingMidiNote {
@@ -17,32 +13,7 @@ struct PendingMidiNote {
     velocity: u8
 }
 
-#[derive(Clone, Copy, Debug)]
-struct MidiNote {
-    pos: u64,
-    pos_realtime: f64, // Milliseconds
-    length: u64,
-    length_realtime: f64, // Milliseconds
-    pitch: u8,
-    channel: u8,
-    velocity: u8
-}
-
-#[derive(Debug)]
-struct MidiTempo {
-    pos: u64,
-    pos_realtime: f64, // Milliseconds
-    mpq: u32,
-    bpm: f64,
-}
-
-#[derive(Debug)]
-struct MidiTrack {
-    name: Option<String>,
-    notes: Vec<MidiNote>,
-}
-
-pub struct MidiReader {
+pub(crate) struct MidiReader {
     info: Option<MidiInfo>,
     current_track_index: i32,
     current_pos: u64,
@@ -73,6 +44,21 @@ impl MidiReader {
 
         midi_reader.finalize_track(); // Finalize last track
         Ok(midi_reader)
+    }
+
+    /*pub fn parse(&mut self) {
+
+    }*/
+
+    pub fn get_midi(&self) -> MidiFile {
+        let info = self.info.unwrap();
+
+        MidiFile {
+            format: info.format,
+            ticks_per_quarter: info.ticks_per_quarter,
+            tracks: self.tracks.to_vec(),
+            tempo: self.tempo_track.to_vec(),
+        }
     }
 }
 

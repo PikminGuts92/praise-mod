@@ -1,3 +1,7 @@
-mod midi_reader;
+mod reader;
+mod shared;
+mod smf;
 
-pub use self::midi_reader::*;
+pub(crate) use self::reader::*;
+pub use self::shared::*;
+pub use self::smf::*;
