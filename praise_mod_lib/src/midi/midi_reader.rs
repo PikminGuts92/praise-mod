@@ -27,6 +27,14 @@ struct MidiNote {
 }
 
 #[derive(Debug)]
+struct MidiTempo {
+    pos: u64,
+    pos_realtime: f64, // Milliseconds
+    mpq: u32,
+    bpm: f64,
+}
+
+#[derive(Debug)]
 struct MidiTrack {
     name: Option<String>,
     notes: Vec<MidiNote>,
@@ -38,7 +46,8 @@ pub struct MidiReader {
     current_pos: u64,
     pending_notes: [Option<PendingMidiNote>; 0x80],
     current_track: Option<MidiTrack>,
-    tracks: Vec<MidiTrack>
+    tracks: Vec<MidiTrack>,
+    tempo_track: Vec<MidiTempo>,
 }
 
 impl MidiReader {
@@ -49,7 +58,8 @@ impl MidiReader {
             current_pos: 0,
             pending_notes: [None; 0x80],
             current_track: None,
-            tracks: Vec::new()
+            tracks: Vec::new(),
+            tempo_track: Vec::new(),
         };
 
         let mut reader = Reader::new(
@@ -83,6 +93,37 @@ impl Handler for MidiReader {
                         track.name = String::from_utf8(data.to_owned()).ok();
                     }
                 }
+            },
+            MetaEvent::SetTempo => {
+                if self.current_track_index > 0 {
+                    // Only parse tempo events from first track
+                    return;
+                }
+
+                let mpq = self.mpq_from_raw_tempo(data);
+
+                // Calculate bpm
+                let bpm = 60_000_000.0 / mpq as f64;
+                let mut pos_realtime = 0.0;
+
+                if let Some(last_tempo) = self.tempo_track.last() {
+                    let tpq = match &self.info {
+                        Some(info) => info.ticks_per_quarter,
+                        None => 480,
+                    };
+
+                    let delta_ticks = self.current_pos - last_tempo.pos;
+                    
+                    let delta_seconds = (last_tempo.mpq as u64 * delta_ticks) as f64 / (1_000_000 * tpq as u32) as f64;
+                    pos_realtime = last_tempo.pos_realtime + delta_seconds;
+                }
+
+                self.tempo_track.push(MidiTempo {
+                    pos: self.current_pos,
+                    pos_realtime,
+                    mpq,
+                    bpm,
+                });
             },
             _ => {
                 // Skip text event
@@ -136,7 +177,10 @@ impl Handler for MidiReader {
     }
 
     fn track_change(&mut self) {
-        self.finalize_track();
+        if self.current_track_index > 0 {
+            // Skip adding tempo track (has dedicated track instead)
+            self.finalize_track();
+        }
 
         self.current_track_index += 1;
         self.current_pos = 0;
@@ -174,5 +218,9 @@ impl MidiReader {
 
         // Add to tracks
         self.tracks.push(track);
+    }
+
+    fn mpq_from_raw_tempo(&self, data: &Vec<u8>) -> u32 {
+        (data[0] as u32) << 16 | (data[1] as u32) << 8 as u32 | data[2] as u32
     }
 }
