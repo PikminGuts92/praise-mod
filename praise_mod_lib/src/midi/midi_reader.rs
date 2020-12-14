@@ -20,7 +20,9 @@ struct PendingMidiNote {
 #[derive(Clone, Copy, Debug)]
 struct MidiNote {
     pos: u64,
+    pos_realtime: f64, // Milliseconds
     length: u64,
+    length_realtime: f64, // Milliseconds
     pitch: u8,
     channel: u8,
     velocity: u8
@@ -106,6 +108,7 @@ impl Handler for MidiReader {
                 let bpm = 60_000_000.0 / mpq as f64;
                 let mut pos_realtime = 0.0;
 
+                // Calculate realtime position
                 if let Some(last_tempo) = self.tempo_track.last() {
                     let tpq = match &self.info {
                         Some(info) => info.ticks_per_quarter,
@@ -114,8 +117,8 @@ impl Handler for MidiReader {
 
                     let delta_ticks = self.current_pos - last_tempo.pos;
                     
-                    let delta_seconds = (last_tempo.mpq as u64 * delta_ticks) as f64 / (1_000_000 * tpq as u32) as f64;
-                    pos_realtime = last_tempo.pos_realtime + delta_seconds;
+                    let delta_ms = (last_tempo.mpq as u64 * delta_ticks) as f64 / (1_000 * tpq as u32) as f64;
+                    pos_realtime = last_tempo.pos_realtime + delta_ms;
                 }
 
                 self.tempo_track.push(MidiTempo {
@@ -163,7 +166,7 @@ impl Handler for MidiReader {
             let pending_note = self.pending_notes[note as usize].unwrap();
             self.pending_notes[note as usize] = None;
 
-            let final_note = self.finalize_note(&pending_note, note, self.current_pos);
+            let final_note = MidiReader::finalize_note(&pending_note, note, self.current_pos);
 
             if let Some(track) = &mut self.current_track {
                 track.notes.push(final_note);
@@ -177,7 +180,17 @@ impl Handler for MidiReader {
     }
 
     fn track_change(&mut self) {
-        if self.current_track_index > 0 {
+        if self.current_track_index == 0
+            && self.tempo_track.len() == 0 {
+            // No tempo changes found, default to 120bpm
+            self.tempo_track.push(MidiTempo {
+                pos: 0,
+                pos_realtime: 0.0,
+                mpq: 60_000_000 / 120,
+                bpm: 120.0,
+            })
+        }
+        else if self.current_track_index > 0 {
             // Skip adding tempo track (has dedicated track instead)
             self.finalize_track();
         }
@@ -196,10 +209,12 @@ impl MidiReader {
         self.current_pos += delta_time as u64;
     }
 
-    fn finalize_note(&self, note: &PendingMidiNote, pitch: u8, end_pos: u64) -> MidiNote {
+    fn finalize_note(note: &PendingMidiNote, pitch: u8, end_pos: u64) -> MidiNote {
         MidiNote {
             pos: note.pos,
+            pos_realtime: 0.0,
             length: end_pos - note.pos,
+            length_realtime: 0.0,
             pitch,
             channel: note.channel,
             velocity: note.velocity,
@@ -211,13 +226,70 @@ impl MidiReader {
             return;
         }
 
-        let track = self.current_track.take().unwrap();
+        let mut track = self.current_track.take().unwrap();
         self.current_track = None;
 
-        // TODO: Iterate over pending notes and finalize
+        // Iterate over pending notes and finalize
+        // Note: This would only be needed if the input midi was missing off notes
+        for (i, note) in self.pending_notes.iter_mut().enumerate() {
+            if let Some(pending_note) = note {
+                // Finalize note
+                let final_note = MidiReader::finalize_note(pending_note, i as u8, self.current_pos);
+                track.notes.push(final_note);
+
+                // Clear out old value
+                *note = None;
+            }
+        }
+
+        // Sort notes in track
+        track.notes.sort_by(|a, b| {
+            // Sort by position then pitch
+            if a.pos == b.pos {
+                a.pitch.partial_cmp(&b.pitch).unwrap()
+            } else {
+                a.pos.partial_cmp(&b.pos).unwrap()
+            }
+        });
+
+        // Update realtime positions
+        let mut tempo_itr = self.tempo_track.iter().rev();
+        let mut current_tempo = tempo_itr.next().unwrap();
+
+        for note in track.notes.iter_mut().rev() {
+            let start_pos = note.pos;
+            let end_pos = start_pos + note.length;
+
+            // Calculate realtime end position
+            while current_tempo.pos > end_pos {
+                current_tempo = tempo_itr.next().unwrap();
+            }
+            let end_pos_realtime = self.calculate_realtime_ms(current_tempo, end_pos);
+
+            // Calculate realtime start position
+            while current_tempo.pos > start_pos {
+                current_tempo = tempo_itr.next().unwrap();
+            }
+            let start_pos_realtime = self.calculate_realtime_ms(current_tempo, start_pos);
+
+            note.pos_realtime = start_pos_realtime;
+            note.length_realtime = end_pos_realtime - start_pos_realtime;
+        }
 
         // Add to tracks
         self.tracks.push(track);
+    }
+
+    fn calculate_realtime_ms(&self, tempo: &MidiTempo, pos_ticks: u64) -> f64 {
+        let tpq = match &self.info {
+            Some(info) => info.ticks_per_quarter,
+            None => 480,
+        };
+
+        let delta_ticks = pos_ticks - tempo.pos;
+
+        let delta_ms = (tempo.mpq as u64 * delta_ticks) as f64 / (1_000 * tpq as u32) as f64;
+        tempo.pos_realtime + delta_ms
     }
 
     fn mpq_from_raw_tempo(&self, data: &Vec<u8>) -> u32 {
