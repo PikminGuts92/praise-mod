@@ -159,6 +159,13 @@ impl XmlWriter {
         let mut xml_notes: Vec<BeatEvent> = Vec::new();
 
         let expert_pos = 96u8;
+        let sp_offset = 116u8;
+
+        // Star power notes
+        let mut star_power = midi_notes
+            .into_iter()
+            .filter(|note| note.pitch == sp_offset);
+        let mut current_sp_note: Option<&MidiNote> = star_power.next();
 
         let mut current_note: Option<BeatEvent> = None;
 
@@ -174,10 +181,27 @@ impl XmlWriter {
                 _ => 0,
             };
 
+            let mut is_sp_note = false;
+            while current_sp_note.is_some() {
+                let sp_note = current_sp_note.unwrap();
+                let sp_note_end = sp_note.pos + sp_note.length;
+
+                if note.pos >= sp_note.pos && note.pos < sp_note_end {
+                    // Note is in range of sp
+                    is_sp_note = true;
+                    break;
+                } else if note.pos >= sp_note_end {
+                    // Update current star power
+                    current_sp_note = star_power.next();
+                } else { // note.pos < sp_note.pos
+                    break;
+                }
+            }
+
             if let Some(beat_event) = &mut current_note {
                 if beat_event.pos == pos {
                     // Is part of chord, update current note
-                    XmlWriter::update_fret_beat_event(beat_event, length, note.pitch - expert_pos);
+                    XmlWriter::update_fret_beat_event(beat_event, length, note.pitch - expert_pos, is_sp_note);
                 } else {
                     // Pop off current note and add to collection
                     let beat_event = current_note.take().unwrap();
@@ -188,7 +212,7 @@ impl XmlWriter {
             // Add as new note
             if current_note.is_none() {
                 let mut beat_event = BeatEvent::default(pos, length);
-                XmlWriter::update_fret_beat_event(&mut beat_event, length, note.pitch - expert_pos);
+                XmlWriter::update_fret_beat_event(&mut beat_event, length, note.pitch - expert_pos, is_sp_note);
 
                 current_note = Some(beat_event);
             }
@@ -203,7 +227,7 @@ impl XmlWriter {
         XmlTrack::GuitarBass(xml_notes)
     }
 
-    fn update_fret_beat_event(note: &mut BeatEvent, length: u64, index: u8) {
+    fn update_fret_beat_event(note: &mut BeatEvent, length: u64, index: u8, sp: bool) {
         // Update length if small
         if note.length < length {
             note.length = length;
@@ -217,6 +241,11 @@ impl XmlWriter {
             3 => note.blue = true,
             4 => note.orange = true,
             _ => return,
+        }
+
+        // Update star power
+        if sp {
+            note.star_power = true
         }
     }
 }
