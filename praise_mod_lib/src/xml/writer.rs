@@ -4,11 +4,19 @@ use crate::midi::*;
 use log::{info, warn};
 use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum XmlTrackType {
     Guitar,
     Bass,
     Vocals,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum XmlTrackDifficulty {
+    Easy,
+    Medium,
+    Hard,
+    Expert,
 }
 
 #[derive(Debug)]
@@ -77,9 +85,16 @@ impl BeatEvent {
 }
 
 #[derive(Debug)]
+pub struct LyricEvent {
+    pub pos: u64,
+    pub length: u64,
+    pub text: String,
+}
+
+#[derive(Debug)]
 pub enum XmlTrack {
     GuitarBass(Vec<BeatEvent>),
-    Vocals()
+    Vocals(Vec<LyricEvent>)
 }
 
 #[derive(Debug)]
@@ -88,14 +103,21 @@ pub struct XmlWriter {
 }
 
 impl XmlWriter {
-    pub fn from_midi(mid: &MidiFile, track_type: XmlTrackType) -> XmlWriter {
+    pub fn from_midi(mid: &MidiFile, track_type: XmlTrackType, track_difficulty: Option<XmlTrackDifficulty>) -> XmlWriter {
         XmlWriter {
             track: match track_type {
-                XmlTrackType::Guitar => XmlWriter::parse_guitar_track_from_midi(mid, false),
-                XmlTrackType::Bass => XmlWriter::parse_guitar_track_from_midi(mid, true),
+                XmlTrackType::Guitar => XmlWriter::parse_guitar_track_from_midi(
+                    mid, 
+                    false,
+                    track_difficulty
+                        .unwrap_or(XmlTrackDifficulty::Expert)),
+                XmlTrackType::Bass => XmlWriter::parse_guitar_track_from_midi(
+                    mid, 
+                    true, 
+                    track_difficulty
+                        .unwrap_or(XmlTrackDifficulty::Expert)),
                 XmlTrackType::Vocals => {
-                    info!("Parsing of vocals from midi is not supported yet");
-                    XmlTrack::Vocals()
+                    XmlWriter::parse_vocal_track_from_midi(mid)
                 },
             }
         }
@@ -105,9 +127,11 @@ impl XmlWriter {
         let mut xml_file = File::create(xml_path)?;
 
         writeln!(xml_file, "<?xml version='1.1'?>")?;
-        writeln!(xml_file, "<beats>")?;
 
         if let XmlTrack::GuitarBass(beats) = &self.track {
+            writeln!(xml_file, "<beats>")?;
+
+            // Iterate over notes
             for beat in beats.iter() {
                 // Set show position to be 2500ms before hit or 0
                 let show_pos = match beat.pos {
@@ -128,13 +152,25 @@ impl XmlWriter {
 
                 writeln!(xml_file, "\t</{}>", note_name)?;
             }
+
+            writeln!(xml_file, "</beats>")?;
+        } else if let XmlTrack::Vocals(lyrics) = &self.track {
+            writeln!(xml_file, "<lyrics>")?;
+
+            // Iterate over lyrics
+            for lyric in lyrics.iter() {
+                writeln!(xml_file, "\t<show>{}</show>", lyric.pos)?;
+                writeln!(xml_file, "\t<text>{}</text>", lyric.text)?;
+                writeln!(xml_file, "\t<remove>{}</remove>", lyric.pos + lyric.length)?;
+            }
+
+            writeln!(xml_file, "</lyrics>")?;
         }
 
-        writeln!(xml_file, "</beats>")?;
         Ok(())
     }
 
-    fn parse_guitar_track_from_midi(mid: &MidiFile, is_bass: bool) -> XmlTrack {
+    fn parse_guitar_track_from_midi(mid: &MidiFile, is_bass: bool, track_difficulty: XmlTrackDifficulty) -> XmlTrack {
         let track_name = match is_bass {
             true => "PART BASS",
             _ => "PART GUITAR",
@@ -158,7 +194,12 @@ impl XmlWriter {
         let midi_notes = &guitar_track.unwrap().notes;
         let mut xml_notes: Vec<BeatEvent> = Vec::new();
 
-        let expert_pos = 96u8;
+        let notes_offset = match track_difficulty {
+            XmlTrackDifficulty::Easy => 60u8,
+            XmlTrackDifficulty::Medium => 72u8,
+            XmlTrackDifficulty::Hard => 84u8,
+            XmlTrackDifficulty::Expert => 96u8,
+        };
         let sp_offset = 116u8;
 
         // Star power notes
@@ -173,8 +214,8 @@ impl XmlWriter {
         for note in midi_notes
             .into_iter()
             .filter(|note|
-                note.pitch >= expert_pos &&
-                note.pitch <= expert_pos + 5) {
+                note.pitch >= notes_offset &&
+                note.pitch <= notes_offset + 5) {
             let pos = note.pos_realtime as u64;
             let length = match note.length {
                 l if l > sustain_length  => note.length_realtime as u64,
@@ -201,7 +242,7 @@ impl XmlWriter {
             if let Some(beat_event) = &mut current_note {
                 if beat_event.pos == pos {
                     // Is part of chord, update current note
-                    XmlWriter::update_fret_beat_event(beat_event, length, note.pitch - expert_pos, is_sp_note);
+                    XmlWriter::update_fret_beat_event(beat_event, length, note.pitch - notes_offset, is_sp_note);
                 } else {
                     // Pop off current note and add to collection
                     let beat_event = current_note.take().unwrap();
@@ -212,7 +253,7 @@ impl XmlWriter {
             // Add as new note
             if current_note.is_none() {
                 let mut beat_event = BeatEvent::default(pos, length);
-                XmlWriter::update_fret_beat_event(&mut beat_event, length, note.pitch - expert_pos, is_sp_note);
+                XmlWriter::update_fret_beat_event(&mut beat_event, length, note.pitch - notes_offset, is_sp_note);
 
                 current_note = Some(beat_event);
             }
@@ -247,5 +288,13 @@ impl XmlWriter {
         if sp {
             note.star_power = true
         }
+    }
+
+    fn parse_vocal_track_from_midi(mid: &MidiFile) -> XmlTrack {
+        let mut lyrics = Vec::new();
+
+
+
+        XmlTrack::Vocals(lyrics)
     }
 }
