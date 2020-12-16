@@ -82,6 +82,28 @@ impl Handler for MidiReader {
                     }
                 }
             },
+            MetaEvent::TextEvent => {                
+                if let Some(track) = &mut self.current_track {
+                    let text = String::from_utf8(data.to_owned())
+                        .unwrap_or(String::from(""));
+
+                    track.texts.push(MidiText {
+                        pos: self.current_pos,
+                        text: MidiTextType::Event(text),
+                    });
+                }
+            },
+            MetaEvent::Lyric => {                
+                if let Some(track) = &mut self.current_track {
+                    let text = String::from_utf8(data.to_owned())
+                        .unwrap_or(String::from(""));
+
+                    track.texts.push(MidiText {
+                        pos: self.current_pos,
+                        text: MidiTextType::Lyric(text),
+                    });
+                }
+            },
             MetaEvent::SetTempo => {
                 if self.current_track_index > 0 {
                     // Only parse tempo events from first track
@@ -185,7 +207,8 @@ impl Handler for MidiReader {
         self.current_pos = 0;
         self.current_track = Some(MidiTrack {
             name: None,
-            notes: Vec::new()
+            notes: Vec::new(),
+            texts: Vec::new(),
         });
     }
 }
