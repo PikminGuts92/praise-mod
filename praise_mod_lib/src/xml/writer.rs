@@ -291,10 +291,105 @@ impl XmlWriter {
     }
 
     fn parse_vocal_track_from_midi(mid: &MidiFile) -> XmlTrack {
+        // Get vocal track
+        let vocal_track = mid.tracks
+            .iter()
+            .find(|&track|
+                match &track.name {
+                    Some(name) => name.eq("PART VOCALS"),
+                    None => false,
+                });
+
+        if vocal_track.is_none() {
+            return XmlTrack::Vocals(Vec::new());
+        }
+
+        let midi_notes = &vocal_track.unwrap().notes;
+        let text_events = &vocal_track.unwrap().texts;
         let mut lyrics = Vec::new();
 
+        let phrase_offset_high = 106u8;
+        let phrase_offset_low = 105u8;
 
+        // Lyrics
+        let mut lyric_events = text_events
+            .into_iter()
+            .filter(|event|
+                event.is_lyric());
+        let mut current_lyric: Option<&MidiText> = lyric_events.next();
+
+        // Phrase sections
+        let phrases = midi_notes
+            .into_iter()
+            .filter(|note|
+                note.pitch <= phrase_offset_high &&
+                note.pitch >= phrase_offset_low);
+
+        // Iterate over phrases
+        for phrase in phrases {
+            let phrase_end_pos = phrase.pos + phrase.length;
+            let mut split_text: Vec<String> = Vec::new();
+
+            // Iterate over lyrics
+            while current_lyric.is_some() {
+                let lyric_event = current_lyric.unwrap();
+                if lyric_event.pos >= phrase_end_pos {
+                    break;
+                }
+
+                let text = lyric_event
+                    .get_text()
+                    .to_owned();
+
+                split_text.push(text);
+                current_lyric = lyric_events.next();
+            }
+
+            if split_text.is_empty() {
+                continue;
+            }
+
+            let lyric = LyricEvent {
+                pos: phrase.pos_realtime as u64,
+                length: phrase.length_realtime as u64,
+                text: XmlWriter::concat_text(&split_text)
+            };
+
+            lyrics.push(lyric);
+        }
 
         XmlTrack::Vocals(lyrics)
+    }
+
+    fn concat_text(text: &Vec<String>) -> String {
+        let mut new_text = String::new();
+        let mut prev_concat = false;
+
+        for (i, t) in text.iter().enumerate() {
+            let mut has_dash = false;
+
+            if t.eq("+") {
+                prev_concat = false;
+                continue;
+            } else if t.ends_with("-") || t.ends_with("=") {
+                has_dash = true;
+            } else {
+
+            }
+
+            if !prev_concat && i > 0 {
+                new_text += " ";
+            }
+
+            let t_max_idx = match has_dash {
+                true => t.len() - 1,
+                _ => t.len(),
+            };
+
+            new_text += &t[..t_max_idx];
+            prev_concat = has_dash;
+        }
+
+        new_text
     }
 }

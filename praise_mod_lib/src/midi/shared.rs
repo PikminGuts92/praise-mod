@@ -24,7 +24,36 @@ pub struct MidiTempo {
 }
 
 #[derive(Clone, Debug)]
+pub enum MidiTextType {
+    Event(String),
+    Lyric(String)
+}
+
+#[derive(Clone, Debug)]
+pub struct MidiText {
+    pub pos: u64,
+    pub text: MidiTextType,
+}
+
+impl MidiText {
+    pub fn is_lyric(&self) -> bool {
+        match self.text {
+            MidiTextType::Lyric(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_text<'a>(&'a self) -> &'a String {
+        match &self.text {
+            MidiTextType::Lyric(text) => text,
+            MidiTextType::Event(text) => text,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct MidiTrack {
     pub name: Option<String>,
     pub notes: Vec<MidiNote>,
+    pub texts: Vec<MidiText>,
 }
