@@ -367,21 +367,21 @@ impl XmlWriter {
 
         for (i, t) in text.iter().enumerate() {
             let mut has_dash = false;
+            let mut is_unpitched = false;
 
             if t.eq("+") {
-                prev_concat = false;
                 continue;
             } else if t.ends_with("-") || t.ends_with("=") {
                 has_dash = true;
-            } else {
-
+            } else if t.ends_with("#") {
+                is_unpitched = true;
             }
 
             if !prev_concat && i > 0 {
                 new_text += " ";
             }
 
-            let t_max_idx = match has_dash {
+            let t_max_idx = match has_dash || is_unpitched {
                 true => t.len() - 1,
                 _ => t.len(),
             };
