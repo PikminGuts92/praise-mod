@@ -2,7 +2,9 @@ use clap::{Clap};
 use std::error::Error;
 
 mod mid2xml;
+mod packcreator;
 pub use self::mid2xml::*;
+pub use self::packcreator::*;
 
 // From Cargo.toml
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -22,7 +24,9 @@ struct Options {
 #[derive(Clap, Debug)]
 enum SubCommand {
     #[clap(name = "mid2xml", about = "Convert gh/rb mid to guitar praise xml")]
-    Mid2Xml(Mid2XmlApp)
+    Mid2Xml(Mid2XmlApp),
+    #[clap(name = "packcreator", about = "Create guitar praise pack from CH song directory")]
+    PackCreator(PackCreatorApp),
 }
 
 #[derive(Debug)]
@@ -39,7 +43,8 @@ impl GPTool {
 
     pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
         match &mut self.options.commands {
-            SubCommand::Mid2Xml(app) => app.process()
+            SubCommand::Mid2Xml(app) => app.process(),
+            SubCommand::PackCreator(app) => app.process(),
         }
     }
 }
