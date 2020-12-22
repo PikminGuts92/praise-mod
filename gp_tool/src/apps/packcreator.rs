@@ -1,6 +1,7 @@
 use crate::apps::{SubApp};
 use clap::{Clap};
 use praise_mod_lib::midi::*;
+use praise_mod_lib::pack::*;
 use praise_mod_lib::xml::*;
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -15,6 +16,7 @@ pub struct PackCreatorApp {
 
 impl SubApp for PackCreatorApp {
     fn process(&mut self) -> Result<(), Box<dyn Error>> {
+        let res = find_dirs_with_file_name(&self.songs_path, "song.ini");
         Ok(())
     }
 }
