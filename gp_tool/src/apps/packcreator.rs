@@ -1,6 +1,7 @@
 use crate::apps::{SubApp};
 use clap::{Clap};
 use log::{info, warn};
+use praise_mod_lib::chart::*;
 use praise_mod_lib::midi::*;
 use praise_mod_lib::pack::*;
 use praise_mod_lib::song::*;
@@ -33,6 +34,9 @@ impl SubApp for PackCreatorApp {
                 song_meta.album,
                 song_meta.year,
             );
+
+            let song_chart_path = path.join("notes.chart");
+            let song_chart = SongChart::from_path(&song_chart_path)?;
         }
         Ok(())
     }

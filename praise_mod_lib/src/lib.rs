@@ -1,3 +1,4 @@
+pub mod chart;
 pub mod midi;
 pub mod pack;
 pub mod song;
