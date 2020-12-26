@@ -1,3 +1,4 @@
+use crate::chart::parser::*;
 use std::error::Error;
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
@@ -9,6 +10,8 @@ pub struct SongChart {
 impl SongChart {
     pub fn from_path(path: &Path) -> Result<SongChart, Box<dyn Error>> {
         let text = read_to_string(path)?;
+
+        parse_chart(&text);
 
         Ok(SongChart {
             name: String::from("")
