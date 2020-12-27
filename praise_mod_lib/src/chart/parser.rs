@@ -1,4 +1,5 @@
 use character::complete::{alphanumeric1, char};
+use crate::chart::ChartParseError;
 use nom::*;
 use nom::bytes::complete::{is_not, tag, take_till, take_while};
 use nom::combinator::*;
@@ -57,20 +58,13 @@ fn get_sections_mapped(text: &str) -> IResult<&str, HashMap<&str, &str>> {
     mapper(text)
 }
 
-pub fn parse_chart(text: &str) {
-    let mapped_sections = get_sections_mapped(text);
+pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
+    let (_, mapped_sections) = get_sections_mapped(text)
+        .map_err(|_| ChartParseError::InitialParseFail)?;
 
-    if let Ok((next, mapped_sections)) = mapped_sections {
-        for sec_name in mapped_sections.keys() {
-            println!("{}", *sec_name);
-        }
-
-        //let bodyRes = get_section_body(newNext);
-
-        //println!("Name: {}", name);
-        //println!("Body: {}", body);
-        //println!("Next: {}", next);
-    } else {
-        //let err = res.unwrap_err();
+    for sec_name in mapped_sections.keys() {
+        println!("{}", *sec_name);
     }
+
+    Ok(())
 }
