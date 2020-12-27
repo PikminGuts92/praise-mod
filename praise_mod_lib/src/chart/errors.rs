@@ -4,5 +4,7 @@ use std::error::Error;
 #[derive(Debug, ThisError)]
 pub enum ChartParseError {
     #[error("Failed to initially parse .chart")]
-    InitialParseFail
+    InitialParseFail,
+    #[error("Failed to parse \"[Song]\" section")]
+    CantParseSongSection
 }
