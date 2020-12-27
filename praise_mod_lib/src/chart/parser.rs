@@ -108,11 +108,60 @@ fn get_key_value_pairs_mapped(text: &str) -> IResult<&str, HashMap<&str, &str>> 
     mapper(text)
 }
 
+fn get_sync_track_parsed(text: &str) -> Result<Vec<(u64, &str, u32)>, ChartParseError> {
+    let (_, events) = get_key_value_pairs(text)
+        .map_err(|_| ChartParseError::CantParseSyncTrackSection)?;
+    
+    let res: Vec<(u64, &str, u32)> = events
+        .into_iter()
+        .map(|(pos, raw_text)| {
+            let split_text: Vec<&str> = raw_text.split_whitespace().collect();
+
+            (pos.parse::<u64>().unwrap(),
+                match split_text.get(0) {
+                    Some(v) => *v,
+                    None => &"",
+                },
+                match split_text.get(1) {
+                    Some(v) => v.parse().unwrap_or_default(),
+                    None => 0,
+                })
+        })
+        .collect();
+    
+    Ok(res)
+}
+
 pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
     let (_, mapped_sections) = get_sections_mapped(text)
         .map_err(|_| ChartParseError::InitialParseFail)?;
 
-    for sec_name in mapped_sections.keys() {
+    let mut tpq = 480u16;
+
+    // Parse song/chart metadata
+    if let Some(song_section) = mapped_sections.get("Song") {
+        let (_, song_meta)= get_key_value_pairs_mapped(song_section)
+            .map_err(|_| ChartParseError::CantParseSongSection)?;
+
+        // For now only care about tpq
+        if let Some(resolution) = song_meta.get("Resolution") {
+            // Update tpq if found in song meta
+            if let Ok(res) = resolution.parse::<u16>() {
+                tpq = res;
+            }
+        }
+    }
+
+    // Parse tempo track
+    if let Some(song_section) = mapped_sections.get("SyncTrack") {
+        let sync_track = get_sync_track_parsed(song_section)?;
+
+        for (pos, typ, val) in &sync_track {
+            println!("Pos: {}, Type: {}, Value: {}", pos, typ, val);
+        }
+    }
+
+    /*for sec_name in mapped_sections.keys() {
         println!("{}", *sec_name);
 
         if !sec_name.eq(&"Song") {
@@ -130,7 +179,7 @@ pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
             println!("\t{}, {}", meta_key, meta_value);
         }
         println!("Next: {}", next);
-    }
+    }*/
 
     Ok(())
 }
