@@ -117,6 +117,7 @@ fn get_sync_track_parsed(text: &str) -> Result<Vec<(u64, &str, u32)>, ChartParse
         .map(|(pos, raw_text)| {
             let split_text: Vec<&str> = raw_text.split_whitespace().collect();
 
+            // (pos, ev_type, value)
             (pos.parse::<u64>().unwrap(),
                 match split_text.get(0) {
                     Some(v) => *v,
@@ -132,22 +133,53 @@ fn get_sync_track_parsed(text: &str) -> Result<Vec<(u64, &str, u32)>, ChartParse
     Ok(res)
 }
 
+fn get_guitar_track_parsed<'a>(text: &'a str, track_name: &'a str) -> Result<Vec<(u64, &'a str, u32, u32)>, ChartParseError> {
+    let (_, events) = get_key_value_pairs(text)
+        .map_err(|_| ChartParseError::CantParseGuitarBassTrackSection{
+            track_name: track_name.to_string(),
+        })?;
+
+    let res: Vec<(u64, &str, u32, u32)> = events
+        .into_iter()
+        .map(|(pos, raw_text)| {
+            let split_text: Vec<&str> = raw_text.split_whitespace().collect();
+
+            // (pos, ev_type, value_1, value_2)
+            (pos.parse::<u64>().unwrap(),
+                match split_text.get(0) {
+                    Some(v) => *v,
+                    None => &"",
+                },
+                match split_text.get(1) {
+                    Some(v) => v.parse().unwrap_or_default(),
+                    None => 0,
+                },
+                match split_text.get(2) {
+                    Some(v) => v.parse().unwrap_or_default(),
+                    None => 0,
+                })
+        })
+        .collect();
+
+    Ok(res)
+}
+
 pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
     let (_, mapped_sections) = get_sections_mapped(text)
         .map_err(|_| ChartParseError::InitialParseFail)?;
 
-    let mut tpq = 480u16;
+    let mut resolution = 480u16;
 
     // Parse song/chart metadata
     if let Some(song_section) = mapped_sections.get("Song") {
         let (_, song_meta)= get_key_value_pairs_mapped(song_section)
             .map_err(|_| ChartParseError::CantParseSongSection)?;
 
-        // For now only care about tpq
-        if let Some(resolution) = song_meta.get("Resolution") {
+        // For now only care about resolution
+        if let Some(res_text) = song_meta.get("Resolution") {
             // Update tpq if found in song meta
-            if let Ok(res) = resolution.parse::<u16>() {
-                tpq = res;
+            if let Ok(res) = res_text.parse::<u16>() {
+                resolution = res;
             }
         }
     }
@@ -158,6 +190,31 @@ pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
 
         for (pos, typ, val) in &sync_track {
             println!("Pos: {}, Type: {}, Value: {}", pos, typ, val);
+        }
+    }
+
+    let track_difficulties = [
+        "Easy",
+        "Medium",
+        "Hard",
+        "Expert",
+    ];
+
+    let track_names = [
+        "Single",
+        "DoubleBass"
+    ];
+
+    // Parse guitar tracks
+    for diff_name in &track_difficulties {
+        let track_name = diff_name.to_string() + "Single";
+
+        if let Some(song_section) = mapped_sections.get(&track_name[..]) {
+            let guitar_track = get_guitar_track_parsed(song_section, &track_name)?;
+    
+            for (pos, typ, val1, val2) in &guitar_track {
+                println!("Pos: {}, Type: {}, Value 1: {}, Value 2: {}", pos, typ, val1, val2);
+            }
         }
     }
 

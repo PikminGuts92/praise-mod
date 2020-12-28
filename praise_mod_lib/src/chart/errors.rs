@@ -9,4 +9,8 @@ pub enum ChartParseError {
     CantParseSongSection,
     #[error("Failed to parse \"[SyncTrack]\" section")]
     CantParseSyncTrackSection,
+    #[error("Failed to parse guitar/bass \"[{track_name}]\" section")]
+    CantParseGuitarBassTrackSection {
+        track_name: String,
+    },
 }
