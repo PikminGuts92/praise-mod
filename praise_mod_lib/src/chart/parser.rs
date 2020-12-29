@@ -1,5 +1,5 @@
 use character::complete::{alphanumeric1, char};
-use crate::chart::ChartParseError;
+use crate::chart::*;
 use nom::*;
 use nom::branch::{alt};
 use nom::bytes::complete::{is_not, tag, take_till, take_while};
@@ -164,11 +164,16 @@ fn get_guitar_track_parsed<'a>(text: &'a str, track_name: &'a str) -> Result<Vec
     Ok(res)
 }
 
-pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
+pub fn parse_chart(text: &str) -> Result<SongChart, ChartParseError> {
     let (_, mapped_sections) = get_sections_mapped(text)
         .map_err(|_| ChartParseError::InitialParseFail)?;
 
     let mut resolution = 480u16;
+    let mut sync_track = SyncTrack {
+        events: Vec::new(),
+    };
+
+    let mut guitar_tracks = Vec::new();
 
     // Parse song/chart metadata
     if let Some(song_section) = mapped_sections.get("Song") {
@@ -186,11 +191,30 @@ pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
 
     // Parse tempo track
     if let Some(song_section) = mapped_sections.get("SyncTrack") {
-        let sync_track = get_sync_track_parsed(song_section)?;
+        let sync_track_events = get_sync_track_parsed(song_section)?;
 
-        for (pos, typ, val) in &sync_track {
+        for (pos, typ, val) in &sync_track_events {
             println!("Pos: {}, Type: {}, Value: {}", pos, typ, val);
         }
+
+        // Map chart sync events
+        let mut notes = sync_track_events
+            .iter()
+            .filter(|(_, s, _)| "B".eq(*s) || "TS".eq(*s))
+            .map(|(pos, s, v)| SyncEvent {
+                pos: *pos,
+                pos_realtime: 0.0,
+                value: match s {
+                    &"B" => SyncEventType::Beat(*v),
+                    &"TS" => SyncEventType::TimeSignature(*v, None),
+                    _ => panic!("Should be unreached!"),
+                }
+            })
+            .collect();
+
+        sync_track
+            .events
+            .append(&mut notes);
     }
 
     let track_difficulties = [
@@ -200,43 +224,54 @@ pub fn parse_chart(text: &str) -> Result<(), ChartParseError> {
         "Expert",
     ];
 
-    let track_names = [
+    let ins_names = [
         "Single",
         "DoubleBass"
     ];
 
-    // Parse guitar tracks
-    for diff_name in &track_difficulties {
-        let track_name = diff_name.to_string() + "Single";
 
-        if let Some(song_section) = mapped_sections.get(&track_name[..]) {
-            let guitar_track = get_guitar_track_parsed(song_section, &track_name)?;
-    
-            for (pos, typ, val1, val2) in &guitar_track {
-                println!("Pos: {}, Type: {}, Value 1: {}, Value 2: {}", pos, typ, val1, val2);
+    // Parse guitar/bass charts
+    for instrument_name in &ins_names {
+        // Parse tracks
+        for diff_name in &track_difficulties {
+            let track_name = diff_name.to_string() + instrument_name;
+
+            if let Some(song_section) = mapped_sections.get(&track_name[..]) {
+                let guitar_track = get_guitar_track_parsed(song_section, &track_name)?;
+
+                // Map guitar events
+                let notes = guitar_track
+                    .iter()
+                    .filter(|(_, s, v1, _)| ("N".eq(*s) && *v1 <= 7) || ("S".eq(*s) && *v1 == 2))
+                    .map(|(pos, s, v1, v2)| GuitarEvent {
+                        pos: *pos,
+                        pos_realtime: 0.0,
+                        length: *v2 as u64,
+                        length_realtime: 0.0,
+                        value: match (s, v1) {
+                            (&"N", 0..=4) => GuitarEventType::Note(*v1),
+                            (&"N", 5) => GuitarEventType::Forced,
+                            (&"N", 6) => GuitarEventType::Tap,
+                            (&"N", 7) => GuitarEventType::Open,
+                            (&"S", _) => GuitarEventType::Starpower,
+                            _ => panic!("Should be unreached!"),
+                        }
+                    })
+                    .collect();
+                
+                let guitar_track = GuitarTrack {
+                    name: track_name.to_string(),
+                    events: notes,
+                };
+
+                guitar_tracks.push(guitar_track);
             }
         }
     }
 
-    /*for sec_name in mapped_sections.keys() {
-        println!("{}", *sec_name);
-
-        if !sec_name.eq(&"Song") {
-            continue;
-        }
-
-        let section = *mapped_sections.get(sec_name).unwrap();
-        let (next, song_meta)= get_key_value_pairs_mapped(section)
-            .map_err(|_| ChartParseError::CantParseSongSection)?;
-
-        
-        for meta_key in song_meta.keys() {
-            let meta_value = *song_meta.get(meta_key).unwrap();
-
-            println!("\t{}, {}", meta_key, meta_value);
-        }
-        println!("Next: {}", next);
-    }*/
-
-    Ok(())
+    Ok(SongChart {
+        resolution,
+        sync_track,
+        guitar_tracks,
+    })
 }
