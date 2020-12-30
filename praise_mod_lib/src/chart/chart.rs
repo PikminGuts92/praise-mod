@@ -48,6 +48,27 @@ pub struct SongChart {
 impl SongChart {
     pub fn from_path(path: &Path) -> Result<SongChart, Box<dyn Error>> {
         let text = read_to_string(path)?;
-        Ok(parse_chart(&text)?)
+        let mut chart = parse_chart(&text)?;
+        chart.update_realtime_positions();
+
+        Ok(chart)
+    }
+
+    fn update_realtime_positions(&mut self) {
+        // Add default tempo event if not found
+        if self.sync_track
+            .events
+            .iter()
+            .any(
+                |e| match e.value {
+                    SyncEventType::Beat(_) => true,
+                    _ => false
+                }) {
+                    self.sync_track.events.push(SyncEvent {
+                    pos: 0,
+                    pos_realtime: 0.0,
+                    value: SyncEventType::Beat(120_000),
+                });
+        }
     }
 }
