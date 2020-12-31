@@ -8,9 +8,7 @@ pub trait RealtimeNote {
     fn get_length(&self) -> u64;
     fn get_length_realtime(&self) -> f64;
 
-    fn set_pos(&mut self, pos: u64);
-    fn set_pos_realtime(&mut self, pos: u64);
-    fn set_length(&mut self, length: u64);
+    fn set_pos_realtime(&mut self, pos: f64);
     fn set_length_realtime(&mut self, length: f64);
 }
 
