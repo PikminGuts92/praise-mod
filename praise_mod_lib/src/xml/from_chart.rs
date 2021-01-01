@@ -1,5 +1,6 @@
 use crate::chart::*;
 use crate::xml::*;
+use std::collections::HashSet;
 
 #[derive(Clone, Copy, Debug)]
 enum GuitarInstrument {
@@ -57,17 +58,26 @@ fn parse_guitar_track_from_chart(chart: &SongChart, is_bass: bool, track_difficu
 
     let fret_notes = guitar_notes
         .iter()
-        .filter(|&e| match e.value {
-            GuitarEventType::Note(n) => n <= 4,
+        .filter(|&e| match &e.value {
+            GuitarEventType::Note(0..=4) => true,
             _ => false,
         });
 
     let mut star_power = guitar_notes
         .iter()
-        .filter(|e| match e.value {
+        .filter(|e| match &e.value {
             GuitarEventType::Starpower => true,
             _ => false,
         });
+
+    let tap_notes = guitar_notes
+        .iter()
+        .filter(|&e| match &e.value {
+            GuitarEventType::Tap => true,
+            _ => false,
+        })
+        .map(|e| e.pos.to_owned())
+        .collect::<HashSet<u64>>();
     
     let mut current_sp_note: Option<&GuitarEvent> = star_power.next();
     let mut current_note: Option<BeatEvent> = None;
@@ -76,10 +86,10 @@ fn parse_guitar_track_from_chart(chart: &SongChart, is_bass: bool, track_difficu
     // Iterate over notes
     for note in fret_notes {
         let pos = note.pos_realtime as u64;
-            let length = match note.length {
-                l if l > sustain_length  => note.length_realtime as u64,
-                _ => 0,
-            };
+        let length = match note.length {
+            l if l > sustain_length  => note.length_realtime as u64,
+            _ => 0,
+        };
 
         let fret_number = match note.value {
             GuitarEventType::Note(n) => n as u8,
@@ -106,7 +116,7 @@ fn parse_guitar_track_from_chart(chart: &SongChart, is_bass: bool, track_difficu
         if let Some(beat_event) = &mut current_note {
             if beat_event.pos == pos {
                 // Is part of chord, update current note
-                XmlFile::update_fret_beat_event(beat_event, length, fret_number, is_sp_note);
+                XmlFile::update_fret_beat_event(beat_event, length, fret_number, is_sp_note, tap_notes.contains(&note.pos));
             } else {
                 // Pop off current note and add to collection
                 let beat_event = current_note.take().unwrap();
@@ -117,7 +127,7 @@ fn parse_guitar_track_from_chart(chart: &SongChart, is_bass: bool, track_difficu
         // Add as new note
         if current_note.is_none() {
             let mut beat_event = BeatEvent::default(pos, length);
-            XmlFile::update_fret_beat_event(&mut beat_event, length, fret_number, is_sp_note);
+            XmlFile::update_fret_beat_event(&mut beat_event, length, fret_number, is_sp_note, tap_notes.contains(&note.pos));
 
             current_note = Some(beat_event);
         }

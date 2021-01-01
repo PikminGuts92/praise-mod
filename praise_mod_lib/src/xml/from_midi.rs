@@ -98,7 +98,7 @@ impl XmlFile {
             if let Some(beat_event) = &mut current_note {
                 if beat_event.pos == pos {
                     // Is part of chord, update current note
-                    XmlFile::update_fret_beat_event(beat_event, length, note.pitch - notes_offset, is_sp_note);
+                    XmlFile::update_fret_beat_event(beat_event, length, note.pitch - notes_offset, is_sp_note, false);
                 } else {
                     // Pop off current note and add to collection
                     let beat_event = current_note.take().unwrap();
@@ -109,7 +109,7 @@ impl XmlFile {
             // Add as new note
             if current_note.is_none() {
                 let mut beat_event = BeatEvent::default(pos, length);
-                XmlFile::update_fret_beat_event(&mut beat_event, length, note.pitch - notes_offset, is_sp_note);
+                XmlFile::update_fret_beat_event(&mut beat_event, length, note.pitch - notes_offset, is_sp_note, false);
 
                 current_note = Some(beat_event);
             }

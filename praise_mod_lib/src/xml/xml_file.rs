@@ -10,7 +10,7 @@ pub struct XmlFile {
 }
 
 impl XmlFile {
-    pub(crate) fn update_fret_beat_event(note: &mut BeatEvent, length: u64, index: u8, sp: bool) {
+    pub(crate) fn update_fret_beat_event(note: &mut BeatEvent, length: u64, index: u8, sp: bool, tap: bool) {
         // Update length if small
         if note.length < length {
             note.length = length;
@@ -29,6 +29,11 @@ impl XmlFile {
         // Update star power
         if sp {
             note.star_power = true
+        }
+
+        // Update tap note
+        if tap {
+            note.tap = true;
         }
     }
 
