@@ -81,6 +81,9 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
     // Copy art
     convert_song_art(path, &output_dir, &full_song_id)?;
 
+    // Convert audio
+    convert_song_audio(path, &output_dir, &full_song_id)?;
+
     Ok(song_meta)
 }
 
@@ -143,12 +146,43 @@ fn convert_song_art(path: &Path, output_dir: &Path, full_song_id: &str) -> Resul
     let album_art_path = path.join("album.png");
     if !album_art_path.exists() {
         info!("No album art found");
+        return Ok(());
     }
 
     // Copy album art to gp song directory
     let gp_art_file_name = format!("GPC{}.png", full_song_id);
-    copy(album_art_path, output_dir.join(&gp_art_file_name))?;
+    copy(&album_art_path, output_dir.join(&gp_art_file_name))?;
 
     // TODO: Copy GPK art too
+    Ok(())
+}
+
+fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
+    let backing_path = path.join("song.ogg");
+    let guitar_path = path.join("guitar.ogg");
+
+    let gp_guitar_file_names = (0..4)
+        .map(|i| format!("GPG{}_{}.dpo", full_song_id, i));
+
+    let gp_bass_file_names = (0..2)
+        .map(|i| format!("GPB{}_{}.dpo", full_song_id, i));
+
+    // Copy backing track
+    if backing_path.exists() {
+        let gp_backing_file_name = format!("GPM{}.dpo", full_song_id);
+        copy(&backing_path, output_dir.join(gp_backing_file_name))?;
+
+        // TODO: Generate preview audio somehow (for now copy whole song)
+        let gp_preview_file_name = format!("GPP{}.dpo", full_song_id);
+        copy(&backing_path, output_dir.join(gp_preview_file_name))?;
+    }
+
+    // Copy guitar track
+    if guitar_path.exists() {
+        for gp_guitar_file_name in gp_guitar_file_names {
+            copy(&guitar_path, output_dir.join(&gp_guitar_file_name))?;
+        }
+    }
+
     Ok(())
 }
