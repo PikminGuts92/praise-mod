@@ -7,7 +7,7 @@ use praise_mod_lib::pack::*;
 use praise_mod_lib::song::*;
 use praise_mod_lib::xml::*;
 use std::error::Error;
-use std::fs::{copy, create_dir_all};
+use std::fs::{copy, create_dir_all, read, write};
 use std::path::{Path, PathBuf};
 
 #[derive(Clap, Debug)]
@@ -180,7 +180,16 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
     // Copy guitar track
     if guitar_path.exists() {
         for gp_guitar_file_name in gp_guitar_file_names {
-            copy(&guitar_path, output_dir.join(&gp_guitar_file_name))?;
+            let out_guitar_path = output_dir.join(&gp_guitar_file_name);
+
+            // "Encrypt" audio
+            let mut data = read(&guitar_path)?;
+            for b in data.iter_mut() {
+                *b = *b ^ 0x0A;
+            }
+
+            // Write to file
+            write(&out_guitar_path, data)?;
         }
     }
 
