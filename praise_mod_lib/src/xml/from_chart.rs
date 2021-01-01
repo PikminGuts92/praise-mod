@@ -71,10 +71,65 @@ fn parse_guitar_track_from_chart(chart: &SongChart, is_bass: bool, track_difficu
     
     let mut current_sp_note: Option<&GuitarEvent> = star_power.next();
     let mut current_note: Option<BeatEvent> = None;
+    let mut xml_notes: Vec<BeatEvent> = Vec::new();
 
-    
-    
-    XmlTrack::GuitarBass(Vec::new())
+    // Iterate over notes
+    for note in fret_notes {
+        let pos = note.pos_realtime as u64;
+            let length = match note.length {
+                l if l > sustain_length  => note.length_realtime as u64,
+                _ => 0,
+            };
+
+        let fret_number = match note.value {
+            GuitarEventType::Note(n) => n as u8,
+            _ => 0,
+        };
+
+        let mut is_sp_note = false;
+        while current_sp_note.is_some() {
+            let sp_note = current_sp_note.unwrap();
+            let sp_note_end = sp_note.pos + sp_note.length;
+
+            if note.pos >= sp_note.pos && note.pos < sp_note_end {
+                // Note is in range of sp
+                is_sp_note = true;
+                break;
+            } else if note.pos >= sp_note_end {
+                // Update current star power
+                current_sp_note = star_power.next();
+            } else { // note.pos < sp_note.pos
+                break;
+            }
+        }
+
+        if let Some(beat_event) = &mut current_note {
+            if beat_event.pos == pos {
+                // Is part of chord, update current note
+                XmlFile::update_fret_beat_event(beat_event, length, fret_number, is_sp_note);
+            } else {
+                // Pop off current note and add to collection
+                let beat_event = current_note.take().unwrap();
+                xml_notes.push(beat_event);
+            }
+        }
+
+        // Add as new note
+        if current_note.is_none() {
+            let mut beat_event = BeatEvent::default(pos, length);
+            XmlFile::update_fret_beat_event(&mut beat_event, length, fret_number, is_sp_note);
+
+            current_note = Some(beat_event);
+        }
+    }
+
+    if current_note.is_some() {
+        // Pop off current note and add to collection
+        let beat_event = current_note.take().unwrap();
+        xml_notes.push(beat_event);
+    }
+
+    XmlTrack::GuitarBass(xml_notes)
 }
 
 fn get_track_by_name<'a>(chart: &'a SongChart, track_name: &str) -> Option<&'a GuitarTrack> {
