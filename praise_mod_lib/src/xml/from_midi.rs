@@ -62,11 +62,11 @@ impl XmlFile {
         let mut star_power = midi_notes
             .into_iter()
             .filter(|note| note.pitch == sp_offset);
-        let mut current_sp_note: Option<&MidiNote> = star_power.next();
 
+        let mut current_sp_note: Option<&MidiNote> = star_power.next();
         let mut current_note: Option<BeatEvent> = None;
 
-        // Iterate over expert notes
+        // Iterate over notes
         for note in midi_notes
             .into_iter()
             .filter(|note|
