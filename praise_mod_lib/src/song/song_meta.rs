@@ -14,7 +14,22 @@ impl SongMeta {
     pub fn from_path(ini_path: &Path) -> Result<SongMeta, Box<dyn Error>> {
         // TODO: Throw error if ini not found or "song" section not present
         let song_ini = Ini::load_from_file(ini_path)?;
-        let song_section = song_ini.section(Some("song")).unwrap();
+
+        // Can be either "song" or "Song"
+        let song_section_name = song_ini
+            .sections()
+            .find(|s| match s {
+                Some(s) => s.eq_ignore_ascii_case("song"),
+                None => false,
+            });
+
+        let song_section_name = song_section_name
+            .unwrap()
+            .unwrap();
+
+        let song_section = song_ini
+            .section(Some(song_section_name))
+            .unwrap();
 
         Ok(SongMeta {
             name: match song_section.get("name") {
