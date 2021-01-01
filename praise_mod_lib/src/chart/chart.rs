@@ -146,7 +146,7 @@ impl RealtimeNote for SyncEvent {
 impl RealtimeTempoNote for SyncEvent {
     fn get_mpq(&self) -> u32 {
         match self.value {
-            SyncEventType::Beat(bpm) => 60_000_000 / (bpm / 1000),
+            SyncEventType::Beat(bpm) => ((60_000_000 * 1000) / bpm as u64) as u32,
             _ => 0,
         }
     }

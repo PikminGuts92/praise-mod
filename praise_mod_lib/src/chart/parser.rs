@@ -193,10 +193,6 @@ pub fn parse_chart(text: &str) -> Result<SongChart, ChartParseError> {
     if let Some(song_section) = mapped_sections.get("SyncTrack") {
         let sync_track_events = get_sync_track_parsed(song_section)?;
 
-        for (pos, typ, val) in &sync_track_events {
-            println!("Pos: {}, Type: {}, Value: {}", pos, typ, val);
-        }
-
         // Map chart sync events
         let mut notes = sync_track_events
             .iter()
