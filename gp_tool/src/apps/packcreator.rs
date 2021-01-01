@@ -34,11 +34,14 @@ impl SubApp for PackCreatorApp {
 
         let pack_id = self.id;
         let mut song_id = 0u16;
-        let output_dir = Path::new(&self.output_path);
+        let output_dir = Path::new(&self.output_path)
+            .join(format!("ep{:02}", pack_id));
+
+        let mut song_builder = XmlSongMetaBuilder::new(pack_name, pack_id);
 
         // Iterate over song directories
         for path in &song_paths {
-            let song_meta = convert_song(path, pack_id, song_id, output_dir);
+            let song_meta = convert_song(path, pack_id, song_id, &output_dir);
 
             if song_meta.is_err() {
                 warn!("Error parsing song, skipping");
@@ -46,9 +49,20 @@ impl SubApp for PackCreatorApp {
             }
 
             let song_meta = song_meta?;
+            song_builder.add_song(&song_meta, song_id);
 
             song_id += 1; // Increment song id
         }
+
+        if song_id == 0 {
+            warn!("No songs found in input directory");
+            return Ok(());
+        }
+
+        // Write song pack xml
+        let xml_meta = song_builder.to_xml_meta();
+        xml_meta.write_to_file(&output_dir.join("master.xml"))?;
+
         Ok(())
     }
 }
@@ -68,7 +82,6 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
 
     let full_song_id = format!("{:02}{:03}", pack_id, song_id);
     let output_dir = output_dir
-        .join(&format!("ep{:02}", pack_id))
         .join(&format!("{:03}", song_id));
 
     if !output_dir.exists() {

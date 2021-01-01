@@ -92,7 +92,21 @@ pub struct LyricEvent {
 }
 
 #[derive(Debug)]
+pub struct XmlSong {
+    pub song_id: u16,
+    pub artist: String,
+    pub title: String,
+    pub album_idx: u16,
+}
+
+#[derive(Debug)]
 pub enum XmlTrack {
     GuitarBass(Vec<BeatEvent>),
-    Vocals(Vec<LyricEvent>)
+    Vocals(Vec<LyricEvent>),
+    Metadata {
+        name: String,
+        pack_id: u8,
+        albums: Vec<String>,
+        songs: Vec<XmlSong>,
+    }
 }

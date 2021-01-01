@@ -2,7 +2,7 @@ use ini::Ini;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SongMeta {
     pub name: String,
     pub artist: String,
