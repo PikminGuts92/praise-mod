@@ -24,6 +24,21 @@ pub struct PackCreatorApp {
     pub id: u8,
 }
 
+#[derive(Debug)]
+enum ChartFile {
+    Chart(SongChart),
+    Midi(MidiFile),
+}
+
+impl ChartFile {
+    fn is_midi(&self) -> bool {
+        match &self {
+            ChartFile::Midi(_) => true,
+            _ => false,
+        }
+    }
+}
+
 impl SubApp for PackCreatorApp {
     fn process(&mut self) -> Result<(), Box<dyn Error>> {
         let song_paths = find_dirs_with_file_name(&self.songs_path, "song.ini")?;
@@ -103,8 +118,24 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
 }
 
 fn convert_song_chart(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
-    let song_chart_path = path.join("notes.chart");
-    let song_chart = SongChart::from_path(&song_chart_path)?;
+    let mut song_chart_path = path.join("notes.chart");
+    let chart_file;
+
+    if song_chart_path.exists() {
+        let song_chart = SongChart::from_path(&song_chart_path)?;
+        chart_file = ChartFile::Chart(song_chart);
+    } else {
+        // Chart not found, try mid
+        song_chart_path = path.join("notes.mid");
+
+        if !song_chart_path.exists() {
+            warn!("No chart in either .chart or .mid format found");
+        }
+
+        // TODO: Throw custom error instead
+        let mid = MidiFile::from_path(&song_chart_path)?;
+        chart_file = ChartFile::Midi(mid);
+    }
 
     let instruments = [
         XmlTrackType::Guitar,
@@ -122,7 +153,10 @@ fn convert_song_chart(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
     for ins_type in &instruments {
         // Parse vocals track
         if *ins_type == XmlTrackType::Vocals {
-            let xml_writer = XmlFile::from_chart(&song_chart, *ins_type, None);
+            let xml_writer = match &chart_file {
+                ChartFile::Chart(chart) => XmlFile::from_chart(chart, *ins_type, None),
+                ChartFile::Midi(mid) => XmlFile::from_midi(mid, *ins_type, None)
+            };
 
             let track_name = format!(
                 "GPL{}.xml",
@@ -136,7 +170,10 @@ fn convert_song_chart(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
 
         // Parse guitar/bass tracks
         for (i, diff) in gtr_difficulties.iter().enumerate() {
-            let xml_writer = XmlFile::from_chart(&song_chart, *ins_type, Some(*diff));
+            let xml_writer = match &chart_file {
+                ChartFile::Chart(chart) => XmlFile::from_chart(chart, *ins_type, Some(*diff)),
+                ChartFile::Midi(mid) => XmlFile::from_midi(mid, *ins_type, Some(*diff))
+            };
 
             let track_name = format!(
                 "GP{}{}_{}.xml",

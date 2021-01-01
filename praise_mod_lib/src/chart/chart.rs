@@ -4,21 +4,25 @@ use std::error::Error;
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
 pub enum SyncEventType {
     Beat(u32), // bpm * 1000
     TimeSignature(u32, Option<u32>), // 2nd number is encoded as base 2 power (3/8 = 3,3)
 }
 
+#[derive(Debug)]
 pub struct SyncEvent {
     pub pos: u64,
     pub pos_realtime: f64, // Milliseconds
     pub value: SyncEventType,
 }
 
+#[derive(Debug)]
 pub struct SyncTrack {
     pub events: Vec<SyncEvent>,
 }
 
+#[derive(Debug)]
 pub enum GuitarEventType {
     Note(u32),
     Starpower,
@@ -27,6 +31,7 @@ pub enum GuitarEventType {
     Open,
 }
 
+#[derive(Debug)]
 pub struct GuitarEvent {
     pub pos: u64,
     pub pos_realtime: f64, // Milliseconds
@@ -35,11 +40,13 @@ pub struct GuitarEvent {
     pub value: GuitarEventType,
 }
 
+#[derive(Debug)]
 pub struct GuitarTrack {
     pub name: String,
     pub events: Vec<GuitarEvent>,
 }
 
+#[derive(Debug)]
 pub struct SongChart {
     pub resolution: u16,
     pub sync_track: SyncTrack,
