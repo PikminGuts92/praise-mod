@@ -3,6 +3,7 @@ use clap::{Clap};
 use log::{info, warn};
 use praise_mod_lib::audio::*;
 use praise_mod_lib::chart::*;
+use praise_mod_lib::image::*;
 use praise_mod_lib::midi::*;
 use praise_mod_lib::pack::*;
 use praise_mod_lib::song::*;
@@ -164,8 +165,16 @@ fn convert_song_art(path: &Path, output_dir: &Path, full_song_id: &str) -> Resul
     }
 
     // Copy album art to gp song directory
-    let gp_art_file_name = format!("GPC{}.png", full_song_id);
-    copy(&album_art_path, output_dir.join(&gp_art_file_name))?;
+    let gp_art_file_path = output_dir.join(format!("GPC{}.png", full_song_id));
+
+    // Resize image
+    let resize_res = resize_and_save_image(&album_art_path, &gp_art_file_path, 256, 256);
+
+    if resize_res.is_err() {
+        let error = resize_res.unwrap_err();
+        warn!("{}", error);
+        return Err(Box::new(error));
+    }
 
     // TODO: Copy GPK art too
     Ok(())
