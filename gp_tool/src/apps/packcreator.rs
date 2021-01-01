@@ -37,6 +37,7 @@ impl SubApp for PackCreatorApp {
 
             let song_chart_path = path.join("notes.chart");
             let song_chart = SongChart::from_path(&song_chart_path)?;
+            let xml_file = XmlFile::from_chart(&song_chart, XmlTrackType::Guitar, Some(XmlTrackDifficulty::Expert));
         }
         Ok(())
     }

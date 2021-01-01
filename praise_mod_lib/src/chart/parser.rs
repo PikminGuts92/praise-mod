@@ -229,7 +229,6 @@ pub fn parse_chart(text: &str) -> Result<SongChart, ChartParseError> {
         "DoubleBass"
     ];
 
-
     // Parse guitar/bass charts
     for instrument_name in &ins_names {
         // Parse tracks
