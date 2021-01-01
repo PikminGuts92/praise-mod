@@ -1,6 +1,7 @@
 use crate::apps::{SubApp};
 use clap::{Clap};
 use log::{info, warn};
+use praise_mod_lib::audio::*;
 use praise_mod_lib::chart::*;
 use praise_mod_lib::midi::*;
 use praise_mod_lib::pack::*;
@@ -161,42 +162,43 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
     let backing_path = path.join("song.ogg");
     let guitar_path = path.join("guitar.ogg");
 
-    let gp_guitar_file_names = (0..4)
-        .map(|i| format!("GPG{}_{}.dpo", full_song_id, i));
+    let gp_backing_file_path = output_dir.join(format!("GPM{}.dpo", full_song_id));
+    let gp_preview_file_path = output_dir.join(format!("GPP{}.dpo", full_song_id));
 
-    let gp_bass_file_names = (0..2)
-        .map(|i| format!("GPB{}_{}.dpo", full_song_id, i));
+    let gp_guitar_file_paths = (0..4)
+        .map(|i| output_dir.join(format!("GPG{}_{}.dpo", full_song_id, i)));
+
+    let gp_bass_file_paths = (0..2)
+        .map(|i| output_dir.join(format!("GPB{}_{}.dpo", full_song_id, i)));
 
     // Copy backing track
     if backing_path.exists() {
-        let gp_backing_file_name = format!("GPM{}.dpo", full_song_id);
-        copy_and_encrypt_audio(&backing_path, &output_dir.join(&gp_backing_file_name))?;
+        ogg_to_dpo(&backing_path, &gp_backing_file_path)?;
 
         // TODO: Generate preview audio somehow (for now copy whole song)
-        let gp_preview_file_name = format!("GPP{}.dpo", full_song_id);
-        copy_and_encrypt_audio(&backing_path, &output_dir.join(&gp_preview_file_name))?;
+        ogg_to_dpo(&backing_path, &gp_preview_file_path)?;
+    } else {
+        // Write silence
+        save_dpo_slience(&gp_backing_file_path)?;
+        save_dpo_slience(&gp_preview_file_path)?;
     }
 
     // Copy guitar track
     if guitar_path.exists() {
-        for gp_guitar_file_name in gp_guitar_file_names {
-            let out_guitar_path = output_dir.join(&gp_guitar_file_name);
-
-            copy_and_encrypt_audio(&guitar_path, &out_guitar_path)?;
+        for out_guitar_path in gp_guitar_file_paths {
+            ogg_to_dpo(&guitar_path, &out_guitar_path)?;
+        }
+    } else {
+        // Write silence
+        for out_guitar_path in gp_guitar_file_paths {
+            save_dpo_slience(&out_guitar_path)?;
         }
     }
 
-    Ok(())
-}
-
-fn copy_and_encrypt_audio(in_path: &Path, out_path: &Path) -> Result<(), Box<dyn Error>> {
-    // "Encrypt" audio
-    let mut data = read(&in_path)?;
-    for b in data.iter_mut() {
-        *b = *b ^ 0x0A;
+    // Just write silence for bass
+    for out_bass_path in gp_bass_file_paths {
+        save_dpo_slience(&out_bass_path)?;
     }
 
-    // Write to file
-    write(&out_path, data)?;
     Ok(())
 }
