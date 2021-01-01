@@ -67,7 +67,7 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
 
     let full_song_id = format!("{:02}{:03}", pack_id, song_id);
     let output_dir = output_dir
-        .join(&format!("{:02}", pack_id))
+        .join(&format!("ep{:02}", pack_id))
         .join(&format!("{:03}", song_id));
 
     if !output_dir.exists() {
@@ -170,11 +170,11 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
     // Copy backing track
     if backing_path.exists() {
         let gp_backing_file_name = format!("GPM{}.dpo", full_song_id);
-        copy(&backing_path, output_dir.join(gp_backing_file_name))?;
+        copy_and_encrypt_audio(&backing_path, &output_dir.join(&gp_backing_file_name))?;
 
         // TODO: Generate preview audio somehow (for now copy whole song)
         let gp_preview_file_name = format!("GPP{}.dpo", full_song_id);
-        copy(&backing_path, output_dir.join(gp_preview_file_name))?;
+        copy_and_encrypt_audio(&backing_path, &output_dir.join(&gp_preview_file_name))?;
     }
 
     // Copy guitar track
@@ -182,16 +182,21 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
         for gp_guitar_file_name in gp_guitar_file_names {
             let out_guitar_path = output_dir.join(&gp_guitar_file_name);
 
-            // "Encrypt" audio
-            let mut data = read(&guitar_path)?;
-            for b in data.iter_mut() {
-                *b = *b ^ 0x0A;
-            }
-
-            // Write to file
-            write(&out_guitar_path, data)?;
+            copy_and_encrypt_audio(&guitar_path, &out_guitar_path)?;
         }
     }
 
+    Ok(())
+}
+
+fn copy_and_encrypt_audio(in_path: &Path, out_path: &Path) -> Result<(), Box<dyn Error>> {
+    // "Encrypt" audio
+    let mut data = read(&in_path)?;
+    for b in data.iter_mut() {
+        *b = *b ^ 0x0A;
+    }
+
+    // Write to file
+    write(&out_path, data)?;
     Ok(())
 }
