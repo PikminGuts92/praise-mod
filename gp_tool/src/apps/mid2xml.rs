@@ -38,7 +38,7 @@ impl SubApp for Mid2XmlApp {
         for ins_type in &instruments {
             // Parse vocals track
             if *ins_type == XmlTrackType::Vocals {
-                let xml_writer = XmlWriter::from_midi(&midi_file, *ins_type, None);
+                let xml_writer = XmlFile::from_midi(&midi_file, *ins_type, None);
 
                 let track_name = format!(
                     "GPL{}.xml",
@@ -52,7 +52,7 @@ impl SubApp for Mid2XmlApp {
 
             // Parse guitar/bass tracks
             for (i, diff) in gtr_difficulties.iter().enumerate() {
-                let xml_writer = XmlWriter::from_midi(&midi_file, *ins_type, Some(*diff));
+                let xml_writer = XmlFile::from_midi(&midi_file, *ins_type, Some(*diff));
 
                 let track_name = format!(
                     "GP{}{}_{}.xml",
