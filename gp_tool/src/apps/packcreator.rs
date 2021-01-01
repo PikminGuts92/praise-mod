@@ -7,7 +7,7 @@ use praise_mod_lib::pack::*;
 use praise_mod_lib::song::*;
 use praise_mod_lib::xml::*;
 use std::error::Error;
-use std::fs::create_dir_all;
+use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 
 #[derive(Clap, Debug)]
@@ -65,6 +65,26 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
         song_meta.year,
     );
 
+    let full_song_id = format!("{:02}{:03}", pack_id, song_id);
+    let output_dir = output_dir
+        .join(&format!("{:02}", pack_id))
+        .join(&format!("{:03}", song_id));
+
+    if !output_dir.exists() {
+        // Create directory
+        create_dir_all(&output_dir)?;
+    }
+
+    // Convert chart
+    convert_song_chart(path, &output_dir, &full_song_id)?;
+
+    // Copy art
+    convert_song_art(path, &output_dir, &full_song_id)?;
+
+    Ok(song_meta)
+}
+
+fn convert_song_chart(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
     let song_chart_path = path.join("notes.chart");
     let song_chart = SongChart::from_path(&song_chart_path)?;
 
@@ -80,17 +100,6 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
         XmlTrackDifficulty::Hard,
         XmlTrackDifficulty::Expert,
     ];
-
-    let full_song_id = format!("{:02}{:03}", pack_id, song_id);
-
-    let output_dir = output_dir
-        .join(&format!("{:02}", pack_id))
-        .join(&format!("{:03}", song_id));
-    
-    if !output_dir.exists() {
-        // Create directory
-        create_dir_all(&output_dir)?;
-    }
 
     for ins_type in &instruments {
         // Parse vocals track
@@ -127,5 +136,19 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
         }
     }
 
-    Ok(song_meta)
+    Ok(())
+}
+
+fn convert_song_art(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
+    let album_art_path = path.join("album.png");
+    if !album_art_path.exists() {
+        info!("No album art found");
+    }
+
+    // Copy album art to gp song directory
+    let gp_art_file_name = format!("GPC{}.png", full_song_id);
+    copy(album_art_path, output_dir.join(&gp_art_file_name))?;
+
+    // TODO: Copy GPK art too
+    Ok(())
 }
