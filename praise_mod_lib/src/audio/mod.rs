@@ -1,3 +1,6 @@
+mod encode;
+
+pub use self::encode::*;
 use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
 use std::path::{Path, PathBuf};
