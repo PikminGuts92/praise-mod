@@ -478,6 +478,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ogg"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13e571c3517af9e1729d4c63571a27edd660ade0667973bfc74a67c660c2b651"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "ogg-sys"
 version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -536,6 +545,7 @@ dependencies = [
  "image",
  "log",
  "nom",
+ "ogg",
  "rust-ini",
  "thiserror",
  "vorbis-sys",
