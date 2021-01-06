@@ -11,8 +11,9 @@ log = "0.4.11"
 nom = "6.0.1"
 ogg = "0.7.1"
 rust-ini = "0.16.0"
+symphonia = "0.1.0"
 thiserror = "1.0.20"
 walkdir = "2.3.1"
 
-[dependencies.vorbis-sys]
-git = "https://github.com/tomaka/vorbis-sys"
+[dependencies.vorbis-encoder]
+git = "https://github.com/PikminGuts92/vorbis-encoder-rs"
