@@ -232,6 +232,9 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
 
     // Copy backing track
     if backing_path.exists() {
+        // Test decode 
+        read_ogg_from_file(&backing_path)?;
+
         ogg_to_dpo(&backing_path, &gp_backing_file_path)?;
 
         // TODO: Generate preview audio somehow (for now copy whole song)
