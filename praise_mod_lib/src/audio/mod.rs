@@ -1,6 +1,12 @@
 mod encode;
+mod errors;
+mod meta;
+mod reader;
 
 pub use self::encode::*;
+pub use self::errors::*;
+pub use self::meta::*;
+pub use self::reader::*;
 use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
 use std::path::{Path, PathBuf};

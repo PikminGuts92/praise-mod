@@ -26,11 +26,15 @@ pub fn read_ogg_from_file<T: AsRef<Path>>(ogg_path: T) -> Result<(), Box<dyn Err
     // Read packets
     let mut n = 0;
     let mut len_play = 0.0;
+    let mut samples_count = 0;
     while let Some(packet) = stream.read_dec_packet()? {
         n += 1;
         // This is guaranteed by the docs
         assert_eq!(packet.len(), stream.ident_hdr.audio_channels as usize);
+        assert_eq!(packet[0].len(), packet[1].len());
+
         len_play += packet[0].len() as f32 / stream.ident_hdr.audio_sample_rate as f32;
+        samples_count += packet[0].len();
     }
 
     Ok(())
