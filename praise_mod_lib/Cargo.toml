@@ -16,4 +16,4 @@ thiserror = "1.0.20"
 walkdir = "2.3.1"
 
 [dependencies.vorbis-encoder]
-git = "https://github.com/PikminGuts92/vorbis-encoder-rs"
+git = "https://github.com/Hossein-Noroozpour/vorbis-encoder-rs"

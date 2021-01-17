@@ -854,7 +854,7 @@ checksum = "b5a972e5669d67ba988ce3dc826706fb0a8b01471c088cb0b6110b805cc36aed"
 [[package]]
 name = "vorbis-encoder"
 version = "0.1.4"
-source = "git+https://github.com/PikminGuts92/vorbis-encoder-rs#b6c3320c400d19d85207366944227196ea0ee2fe"
+source = "git+https://github.com/Hossein-Noroozpour/vorbis-encoder-rs#a0b934df9a2da4785e48b1963cd29a3a077fb1ec"
 dependencies = [
  "gcc",
  "libc",
@@ -865,8 +865,9 @@ dependencies = [
 
 [[package]]
 name = "vorbis-sys"
-version = "0.1.0"
-source = "git+https://github.com/tomaka/vorbis-sys#24ec9a7d570e3d84749da4bd8d40e3f7fb19b1ab"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd9ed6ef5361a85e68ccc005961d995c2d44e31f0816f142025f2ca2383dfbfd"
 dependencies = [
  "cc",
  "libc",
