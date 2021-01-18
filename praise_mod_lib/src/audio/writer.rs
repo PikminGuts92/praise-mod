@@ -74,7 +74,7 @@ impl AudioWriter {
                 }
 
                 let sample_idx = i >> 1;
-                let to_mix_sample = match i % 1 {
+                let to_mix_sample = match i % 2 {
                     0 => left_src[sample_idx],
                     _ => right_src[sample_idx],
                 };
