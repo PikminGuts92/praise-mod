@@ -218,6 +218,26 @@ fn convert_song_art(path: &Path, output_dir: &Path, full_song_id: &str) -> Resul
 }
 
 fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
+    let ogg_paths = get_files_in_dir(path, Some(&"ogg"))?;
+
+    let ogg_files = ogg_paths
+        .iter()
+        .map(|p| OggReader::from_path(p))
+        .filter(|o| o.is_ok())
+        .map(|o| o.unwrap());
+
+    let mut ogg_writer = None;
+    for mut ogg_file in ogg_files {
+        if ogg_writer.is_none() {
+            ogg_writer = Some(AudioWriter::new(ogg_file.get_sample_rate()));
+        }
+
+        if let Some(writer) = &mut ogg_writer {
+            let data = ogg_file.read_to_end();
+            writer.merge_from(&data);
+        }
+    }
+
     let backing_path = path.join("song.ogg");
     let guitar_path = path.join("guitar.ogg");
 
@@ -229,6 +249,10 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
 
     let gp_bass_file_paths = (0..2)
         .map(|i| output_dir.join(format!("GPB{}_{}.dpo", full_song_id, i)));
+
+    // Assume writer exists
+    let writer = &mut ogg_writer.unwrap();
+    writer.save_as_ogg(&gp_backing_file_path, None);
 
     // Copy backing track
     if backing_path.exists() {
