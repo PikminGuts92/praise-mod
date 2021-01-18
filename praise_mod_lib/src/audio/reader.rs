@@ -57,6 +57,11 @@ impl AudioReader for OggReader {
     fn read_to_end(&mut self) -> Vec<Vec<i16>> {
         let mut samples = Vec::new();
 
+        // Add vector for each channel
+        for _ in 0..self.get_channel_count() {
+            samples.push(Vec::new());
+        }
+
         if self.eof {
             return samples
         }
@@ -72,7 +77,12 @@ impl AudioReader for OggReader {
                 Err(_) => break,
             };
 
-            samples.append(&mut packet);
+            // Iterate over channels and append samples
+            for (i, channel_samples) in packet
+                .iter_mut()
+                .enumerate() {
+                samples[i].append(channel_samples);
+            }
         }
 
         self.pos = samples.len() as u64;
