@@ -18,8 +18,6 @@ pub struct OggReader {
 
 impl OggReader {
     pub fn from_path<T: AsRef<Path>>(ogg_path: T) -> Result<OggReader, AudioReaderError> {
-        let ogg_path = ogg_path.as_ref();
-
         // To try open file
         let ogg_file = match File::open(ogg_path) {
             Ok(file) => file,
@@ -54,7 +52,6 @@ impl AudioMeta for OggReader {
         self.stream.ident_hdr.audio_sample_rate
     }
 }
-
 
 impl AudioReader for OggReader {
     fn read_to_end(&mut self) -> Vec<Vec<i16>> {
