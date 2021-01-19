@@ -22,7 +22,7 @@ impl AudioWriter {
         }
     }
 
-    pub fn save_as_ogg<T: AsRef<Path>>(&mut self, ogg_path: T, quality: Option<f32>) {
+    pub fn save_as_ogg<T: AsRef<Path>>(&self, ogg_path: T, quality: Option<f32>) {
         // TODO: Handle exceptions
 
         // Create encoder
@@ -87,6 +87,35 @@ impl AudioWriter {
             self.samples.push(left_src[i]);
             self.samples.push(right_src[i]);
         }
+    }
+
+    fn get_samples_from<'a>(&'a self, start_ms: f64, length_ms: f64) -> &'a [i16] {
+        let start_hz = ((start_ms / 1000.0) * self.sample_rate as f64) as usize * (self.channels as usize);
+        let end_hz = start_hz + ((length_ms / 1000.0) * self.sample_rate as f64) as usize * (self.channels as usize);
+
+        &self.samples[start_hz..end_hz]
+    }
+
+    pub fn create_sub_writer(&self, start_ms: f64, length_ms: f64) -> AudioWriter {
+        let sub_samples = self.get_samples_from(start_ms, length_ms);
+
+        AudioWriter {
+            channels: self.channels,
+            sample_rate: self.sample_rate,
+            // Copy samples
+            samples: sub_samples
+                .iter()
+                .map(|v| *v)
+                .collect()
+        }
+    }
+
+    pub fn get_length_in_ms(&self) -> f64 {
+        if self.samples.is_empty() {
+            return 0.0
+        }
+
+        ((self.samples.len() / (self.channels as usize)) as f64 / self.sample_rate as f64) * 1000.0
     }
 }
 

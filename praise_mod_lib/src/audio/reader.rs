@@ -6,14 +6,14 @@ use std::fs::File;
 use std::path::{Path};
 
 pub trait AudioReader {
-    fn read_to_end(&mut self) -> Vec<Vec<i16>>;
+    fn read_to_end(&mut self);
+    fn get_samples<'a>(&'a self) -> &'a Vec<Vec<i16>>;
 }
 
 pub struct OggReader {
     stream: OggStreamReader<File>,
-    pos: u64,
     eof: bool,
-    total_samples: usize,
+    samples: Vec<Vec<i16>>,
 }
 
 impl OggReader {
@@ -36,9 +36,8 @@ impl OggReader {
 
         return Ok(OggReader {
             stream,
-            pos: 0,
             eof: false,
-            total_samples: 0,
+            samples: Vec::new(),
         })
     }
 }
@@ -54,16 +53,14 @@ impl AudioMeta for OggReader {
 }
 
 impl AudioReader for OggReader {
-    fn read_to_end(&mut self) -> Vec<Vec<i16>> {
-        let mut samples = Vec::new();
+    fn read_to_end(&mut self) {
+        if self.eof {
+            return
+        }
 
         // Add vector for each channel
         for _ in 0..self.get_channel_count() {
-            samples.push(Vec::new());
-        }
-
-        if self.eof {
-            return samples
+            self.samples.push(Vec::new());
         }
 
         loop {
@@ -81,14 +78,14 @@ impl AudioReader for OggReader {
             for (i, channel_samples) in packet
                 .iter_mut()
                 .enumerate() {
-                samples[i].append(channel_samples);
+                self.samples[i].append(channel_samples);
             }
         }
 
-        self.pos = samples.len() as u64;
         self.eof = true;
-        self.total_samples = samples.len();
+    }
 
-        samples
+    fn get_samples<'a>(&'a self) -> &'a Vec<Vec<i16>> {
+        &self.samples
     }
 }

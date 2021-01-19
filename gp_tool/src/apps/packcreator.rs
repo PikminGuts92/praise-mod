@@ -273,8 +273,12 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
                 }
 
                 if let Some(writer) = &mut ogg_writer {
-                    let data = ogg_file.read_to_end();
-                    writer.merge_from(&data);
+                    // Decode audio
+                    ogg_file.read_to_end();
+
+                    // Merge with existing track
+                    let data = ogg_file.get_samples();
+                    writer.merge_from(data);
                 }
             }
 
@@ -284,12 +288,16 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
             }
 
             // Encode mixed audio and write to file
-            let mut ogg_writer = ogg_writer.unwrap();
-            let writer = &mut ogg_writer;
-            writer.save_as_ogg(&gp_backing_file_path, None);
+            let ogg_writer = ogg_writer.unwrap();
+            ogg_writer.save_as_ogg(&gp_backing_file_path, None);
 
             // "Encrypt"
             ogg_to_dpo(&gp_backing_file_path, &gp_backing_file_path)?;
+
+            // Generate preview audio
+            let preview_writer = ogg_writer.create_sub_writer(20_000.0, 30_000.0);
+            preview_writer.save_as_ogg(&gp_preview_file_path, None);
+            ogg_preview_path = Some(&gp_preview_file_path);
         }
     }
 
