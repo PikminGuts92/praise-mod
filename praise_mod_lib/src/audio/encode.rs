@@ -1,7 +1,6 @@
 use lewton::VorbisError;
 use lewton::inside_ogg::OggStreamReader;
 use log::{error, info, warn};
-use ogg::*;
 use std::convert::AsRef;
 use std::error::Error;
 use std::fs::File;
@@ -36,20 +35,6 @@ pub fn read_ogg_from_file<T: AsRef<Path>>(ogg_path: T) -> Result<(), Box<dyn Err
         len_play += packet[0].len() as f32 / stream.ident_hdr.audio_sample_rate as f32;
         samples_count += packet[0].len();
     }
-
-    Ok(())
-}
-
-pub fn read_ogg_from_bytes(data: &[u8]) -> Result<(), Box<dyn Error>> {
-    let mut data_reader = Cursor::new(data);
-
-
-    let mut reader = PacketReader::new(data_reader);
-    let packetResult = reader.read_packet()?;
-
-    if let Some(packet) = &packetResult {
-
-    } 
 
     Ok(())
 }
