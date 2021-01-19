@@ -217,30 +217,32 @@ fn convert_song_art(path: &Path, output_dir: &Path, full_song_id: &str) -> Resul
     Ok(())
 }
 
+fn is_file_preview<T: AsRef<Path>>(file_path: T, ext: &str) -> bool {
+    match file_path.as_ref().file_name() {
+        Some(f_name) => match f_name.to_str() {
+            Some(f_name_str) => f_name_str.eq_ignore_ascii_case(&format!("preview.{}", ext)),
+            None => false,
+        },
+        None => false,
+    }
+}
+
 fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
     let ogg_paths = get_files_in_dir(path, Some(&"ogg"))?;
 
-    let ogg_files = ogg_paths
+    let mut ogg_preview_path = None;
+    let ogg_stem_paths = ogg_paths
         .iter()
-        .map(|p| OggReader::from_path(p))
-        .filter(|o| o.is_ok())
-        .map(|o| o.unwrap());
-
-    let mut ogg_writer = None;
-    for mut ogg_file in ogg_files {
-        if ogg_writer.is_none() {
-            ogg_writer = Some(AudioWriter::new(ogg_file.get_sample_rate()));
-        }
-
-        if let Some(writer) = &mut ogg_writer {
-            let data = ogg_file.read_to_end();
-            writer.merge_from(&data);
-        }
-    }
-
-    let backing_path = path.join("song.ogg");
-    let guitar_path = path.join("guitar.ogg");
-
+        .filter(|p| {
+            if is_file_preview(p, "ogg") {
+                ogg_preview_path = Some(*p);
+                false
+            } else {
+                true
+            }
+        })
+        .collect::<Vec<&PathBuf>>();
+    
     let gp_backing_file_path = output_dir.join(format!("GPM{}.dpo", full_song_id));
     let gp_preview_file_path = output_dir.join(format!("GPP{}.dpo", full_song_id));
 
@@ -250,40 +252,62 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
     let gp_bass_file_paths = (0..2)
         .map(|i| output_dir.join(format!("GPB{}_{}.dpo", full_song_id, i)));
 
-    // Assume writer exists
-    let writer = &mut ogg_writer.unwrap();
-    writer.save_as_ogg(&gp_backing_file_path, None);
+    match ogg_stem_paths.len() {
+        0 => return Ok(()), // TODO: Return error (no audio found)
+        1 => {
+            // Only single stem found, no need for re-encoding
+            let backing_path = ogg_stem_paths[0];
+            ogg_to_dpo(backing_path, &gp_backing_file_path)?;
+        },
+        _ => {
+            // Multiple stems found, mix and re-encode
+            let mut ogg_writer = None;
+            for ogg_path in &ogg_stem_paths {            
+                let mut ogg_file = match OggReader::from_path(ogg_path) {
+                    Ok(ogg) => ogg,
+                    Err(_) => continue // TODO: Log error
+                };
 
-    // Copy backing track
-    if backing_path.exists() {
-        // Test decode 
-        read_ogg_from_file(&backing_path)?;
+                if ogg_writer.is_none() {
+                    ogg_writer = Some(AudioWriter::new(ogg_file.get_sample_rate()));
+                }
 
-        ogg_to_dpo(&backing_path, &gp_backing_file_path)?;
+                if let Some(writer) = &mut ogg_writer {
+                    let data = ogg_file.read_to_end();
+                    writer.merge_from(&data);
+                }
+            }
 
-        // TODO: Generate preview audio somehow (for now copy whole song)
-        ogg_to_dpo(&backing_path, &gp_preview_file_path)?;
-    } else {
-        // Write silence
-        save_dpo_slience(&gp_backing_file_path)?;
-        save_dpo_slience(&gp_preview_file_path)?;
+            if ogg_writer.is_none() {
+                // TODO: Log error and skip song
+                return Ok(())
+            }
+
+            // Encode mixed audio and write to file
+            let mut ogg_writer = ogg_writer.unwrap();
+            let writer = &mut ogg_writer;
+            writer.save_as_ogg(&gp_backing_file_path, None);
+
+            // "Encrypt"
+            ogg_to_dpo(&gp_backing_file_path, &gp_backing_file_path)?;
+        }
     }
 
-    // Copy guitar track
-    if guitar_path.exists() {
-        for out_guitar_path in gp_guitar_file_paths {
-            ogg_to_dpo(&guitar_path, &out_guitar_path)?;
-        }
-    } else {
-        // Write silence
-        for out_guitar_path in gp_guitar_file_paths {
-            save_dpo_slience(&out_guitar_path)?;
-        }
+    // Write silence for guitar tracks
+    for out_guitar_path in gp_guitar_file_paths {
+        save_dpo_slience(&out_guitar_path)?;
     }
 
-    // Just write silence for bass
+    // Write silence for bass tracks
     for out_bass_path in gp_bass_file_paths {
         save_dpo_slience(&out_bass_path)?;
+    }
+
+    if let Some(prevew_path) = ogg_preview_path {
+        // Preview exists, just copy and "encrypt"
+        ogg_to_dpo(prevew_path, &gp_preview_file_path)?;
+    } else {
+        // Generate preview from mixed audio
     }
 
     Ok(())
