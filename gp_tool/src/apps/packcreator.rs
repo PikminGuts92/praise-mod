@@ -8,6 +8,7 @@ use praise_mod_lib::midi::*;
 use praise_mod_lib::pack::*;
 use praise_mod_lib::song::*;
 use praise_mod_lib::xml::*;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
 use std::path::{Path, PathBuf};
@@ -260,14 +261,29 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
             ogg_to_dpo(backing_path, &gp_backing_file_path)?;
         },
         _ => {
+            // Read each ogg stem (initial metadata)
+            let mut ogg_stems: Vec<OggReader> = ogg_stem_paths
+                .iter()
+                .map(|p| OggReader::from_path(p))
+                .filter_map(Result::ok) // Only map ok results TODO: Maybe log warnings for skipped stems?
+                .collect();
+
+            // Gets the most common sample rate
+            let common_sample_rate = *ogg_stems
+                .iter()
+                .map(|o| o.get_sample_rate())
+                .fold(HashMap::<u32, usize>::new(), |mut m, sr| {
+                    *m.entry(sr).or_default() += 1;
+                    m
+                })
+                .iter()
+                .max_by_key(|(_, f)| *f)
+                .map(|(sr, _)| sr)
+                .unwrap();
+
             // Multiple stems found, mix and re-encode
             let mut ogg_writer = None;
-            for ogg_path in &ogg_stem_paths {            
-                let mut ogg_file = match OggReader::from_path(ogg_path) {
-                    Ok(ogg) => ogg,
-                    Err(_) => continue // TODO: Log error
-                };
-
+            for ogg_file in ogg_stems.iter_mut() {
                 if ogg_writer.is_none() {
                     ogg_writer = Some(AudioWriter::new(ogg_file.get_sample_rate()));
                 }
@@ -276,8 +292,13 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
                     // Decode audio
                     ogg_file.read_to_end();
 
+                    let mut data = ogg_file.get_samples();
+
+                    if ogg_file.get_sample_rate() != common_sample_rate {
+                        // Resample audio to properly merge
+                    }
+
                     // Merge with existing track
-                    let data = ogg_file.get_samples();
                     writer.merge_from(data);
                 }
             }
