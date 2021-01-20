@@ -5,6 +5,7 @@ authors = ["PikminGuts92"]
 edition = "2018"
 
 [dependencies]
+fon = "0.5.0"
 ghakuf = "0.5.6"
 image = "0.23.12"
 lewton = "0.10.1"

@@ -285,21 +285,25 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
             let mut ogg_writer = None;
             for ogg_file in ogg_stems.iter_mut() {
                 if ogg_writer.is_none() {
-                    ogg_writer = Some(AudioWriter::new(ogg_file.get_sample_rate()));
+                    ogg_writer = Some(AudioWriter::new(common_sample_rate));
                 }
 
                 if let Some(writer) = &mut ogg_writer {
                     // Decode audio
                     ogg_file.read_to_end();
 
-                    let mut data = ogg_file.get_samples();
-
                     if ogg_file.get_sample_rate() != common_sample_rate {
                         // Resample audio to properly merge
-                    }
+                        let resampled = ogg_file.resample(common_sample_rate).unwrap();
 
-                    // Merge with existing track
-                    writer.merge_from(data);
+                        // Merge with existing track
+                        let data = resampled.get_samples();
+                        writer.merge_from(data);
+                    } else {
+                        // Merge with existing track
+                        let data = ogg_file.get_samples();
+                        writer.merge_from(data);
+                    }
                 }
             }
 

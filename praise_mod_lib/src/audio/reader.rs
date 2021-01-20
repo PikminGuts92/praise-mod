@@ -1,19 +1,52 @@
 use super::AudioMeta;
 use super::AudioReaderError;
+use fon::mono::Mono16;
+use fon::stereo::Stereo16;
+use fon::{Audio, Sink, Stream};
 use lewton::inside_ogg::OggStreamReader;
-use std::convert::AsRef;
+use std::{convert::AsRef, iter::Zip};
 use std::fs::File;
 use std::path::{Path};
 
 pub trait AudioReader {
     fn read_to_end(&mut self);
     fn get_samples<'a>(&'a self) -> &'a Vec<Vec<i16>>;
+    fn resample(&self, sample_rate: u32) -> Option<ResampledReader>;
 }
 
 pub struct OggReader {
     stream: OggStreamReader<File>,
     eof: bool,
     samples: Vec<Vec<i16>>,
+}
+
+pub struct ResampledReader {
+    sample_rate: u32,
+    samples: Vec<Vec<i16>>,
+}
+
+impl AudioMeta for ResampledReader {
+    fn get_channel_count(&self) -> u8 {
+        self.samples.len() as u8
+    }
+
+    fn get_sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+}
+
+impl AudioReader for ResampledReader {
+    fn read_to_end(&mut self) {
+        // Do nothing
+    }
+
+    fn get_samples<'a>(&'a self) -> &'a Vec<Vec<i16>> {
+        &self.samples
+    }
+
+    fn resample(&self, sample_rate: u32) -> Option<ResampledReader> {
+        resample_audio(self, sample_rate)
+    }
 }
 
 impl OggReader {
@@ -88,4 +121,62 @@ impl AudioReader for OggReader {
     fn get_samples<'a>(&'a self) -> &'a Vec<Vec<i16>> {
         &self.samples
     }
+
+    fn resample(&self, sample_rate: u32) -> Option<ResampledReader> {
+        resample_audio(self, sample_rate)
+    }
+}
+
+fn resample_audio<T: AudioReader + AudioMeta>(audio: &T, sample_rate: u32) -> Option<ResampledReader> {
+    let in_sample_rate = audio.get_sample_rate();
+
+    let samples = match audio.get_channel_count() {
+        1 => {
+            vec![
+                resample_mono(&audio.get_samples()[0], in_sample_rate, sample_rate)
+            ]
+        }
+        2 => {
+            /*
+            // Interleave audio
+            let l_audio = &audio.get_samples()[0];
+            let r_audio = &audio.get_samples()[1];
+
+            let in_samples: Vec<i16> = l_audio
+                .iter()
+                .zip(r_audio.iter())
+                .flat_map(|(l, r)| vec![*l, *r])
+                .collect();
+
+            let in_audio = Audio::<Stereo16>::with_i16_buffer(in_sample_rate, in_samples);
+            let mut out_audio = Audio::<Stereo16>::with_stream(sample_rate, &in_audio);
+            */
+
+            vec![
+                // For now it's just way easier to resample each channel instead of interleave -> resample -> deinterleave
+                resample_mono(&audio.get_samples()[0], in_sample_rate, sample_rate),
+                resample_mono(&audio.get_samples()[1], in_sample_rate, sample_rate)
+            ]
+        },
+        _ => return None
+    };
+
+    Some(ResampledReader {
+        sample_rate,
+        samples
+    })
+}
+
+fn resample_mono(samples: &Vec<i16>, in_sample_rate: u32, out_sample_rate: u32) -> Vec<i16> {
+    // Need to copy data :/
+    let in_samples = samples.to_owned();
+
+    let in_audio = Audio::<Mono16>::with_i16_buffer(in_sample_rate, in_samples);
+    let mut out_audio = Audio::<Mono16>::with_stream(out_sample_rate, &in_audio);
+
+    out_audio
+        .as_i16_slice()
+        .iter()
+        .map(|v| *v)
+        .collect::<Vec<i16>>()
 }
