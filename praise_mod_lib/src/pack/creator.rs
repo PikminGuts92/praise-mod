@@ -6,7 +6,7 @@ use crate::pack::*;
 use crate::shared::*;
 use crate::song::*;
 use crate::xml::*;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
@@ -22,14 +22,14 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
 
     match song_count {
         0 => {
-            warn!("No songs found in \"{}\"", &ops.songs_path);
+            error!("No songs found in \"{}\"", &ops.songs_path);
             return Ok(())
         },
         1 => {
             info!("Found 1 song");
         },
         1000..=usize::MAX => {
-            warn!("Found {} songs which is over 1000 song limit", song_count);
+            error!("Found {} songs which is over 1000 song limit", song_count);
             return Ok(())
         },
         _ => {
@@ -44,7 +44,7 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
     let pack_id = ops.id;
 
     if pack_id < 4 || pack_id > 98 {
-        warn!("Pack id of \"{:03}\" is not valid. Must be between 4-98", pack_id);
+        error!("Pack id value of {} is not valid (must be between 4-98)", pack_id);
         return Ok(())
     }
 
@@ -85,7 +85,7 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
     }
 
     if song_id == 0 {
-        warn!("No songs found in input directory");
+        error!("No songs found in input directory");
         return Ok(());
     }
 
@@ -163,7 +163,7 @@ fn convert_song_chart(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
         song_chart_path = path.join("notes.mid");
 
         if !song_chart_path.exists() {
-            warn!("No chart in either .chart or .mid format found");
+            error!("No chart in either .chart or .mid format found");
         }
 
         // TODO: Throw custom error instead
@@ -243,7 +243,7 @@ fn convert_song_art(path: &Path, output_dir: &Path, full_song_id: &str) -> Resul
 
     if resize_res.is_err() {
         let error = resize_res.unwrap_err();
-        warn!("{}", error);
+        error!("{}", error);
         return Err(Box::new(error));
     }
 
