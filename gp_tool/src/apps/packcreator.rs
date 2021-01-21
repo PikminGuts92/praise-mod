@@ -313,7 +313,8 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
             }
 
             // Encode mixed audio and write to file
-            let ogg_writer = ogg_writer.unwrap();
+            let mut ogg_writer = ogg_writer.unwrap();
+            ogg_writer.fix_clipping();
             ogg_writer.save_as_ogg(&gp_backing_file_path, None);
 
             // "Encrypt"

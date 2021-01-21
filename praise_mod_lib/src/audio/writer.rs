@@ -10,7 +10,7 @@ const MAX_SAMPLE_VALUE: i32 = i16::MAX as i32;
 pub struct AudioWriter {
     channels: u32,
     sample_rate: u32,
-    samples: Vec<i16>, // Interleaved samples
+    samples: Vec<i32>, // Interleaved samples
 }
 
 impl AudioWriter {
@@ -38,7 +38,7 @@ impl AudioWriter {
         let mut ogg_file = File::create(ogg_path).unwrap();
 
         // Encode data + write to file
-        let data = encoder.encode(&self.samples).unwrap();
+        let data = encoder.encode(&self.samples_as_i16()).unwrap();
         ogg_file.write(&data).unwrap();
 
         // Finalize file
@@ -79,17 +79,18 @@ impl AudioWriter {
                     _ => right_src[sample_idx],
                 };
 
-                *sample = mix_samples(*sample, to_mix_sample);
+                // *sample = mix_samples(*sample, to_mix_sample);
+                *sample = mix_samples_i32(*sample, to_mix_sample as i32);
         }
 
         // Append audio
         for i in sample_length..source_sample_length {
-            self.samples.push(left_src[i]);
-            self.samples.push(right_src[i]);
+            self.samples.push(left_src[i] as i32);
+            self.samples.push(right_src[i] as i32);
         }
     }
 
-    fn get_samples_from<'a>(&'a self, start_ms: f64, length_ms: f64) -> &'a [i16] {
+    fn get_samples_from<'a>(&'a self, start_ms: f64, length_ms: f64) -> &'a [i32] {
         let start_hz = ((start_ms / 1000.0) * self.sample_rate as f64) as usize * (self.channels as usize);
         let end_hz = start_hz + ((length_ms / 1000.0) * self.sample_rate as f64) as usize * (self.channels as usize);
 
@@ -117,6 +118,44 @@ impl AudioWriter {
 
         ((self.samples.len() / (self.channels as usize)) as f64 / self.sample_rate as f64) * 1000.0
     }
+
+    fn samples_as_i16(&self) -> Vec<i16> {
+        self.samples
+            .iter()
+            .map(|s| *s as i16)
+            .collect()
+    }
+
+    pub fn fix_clipping(&mut self) {
+        if self.samples.is_empty() {
+            return
+        }
+
+        // Find max value
+        let abs_max = self.samples
+            .iter()
+            .map(|s| s.abs())
+            .max()
+            .unwrap();
+
+        if abs_max < MAX_SAMPLE_VALUE {
+            return
+        }
+
+        let scale = (abs_max as f64) / (MAX_SAMPLE_VALUE as f64);
+
+        for s in self.samples.iter_mut() {
+            let new_value = ((*s as f64) / scale) as i32;
+
+            if new_value < MIN_SAMPLE_VALUE {
+                *s = MIN_SAMPLE_VALUE;
+            } else if new_value < MAX_SAMPLE_VALUE {
+                *s = new_value;
+            } else {
+                *s = MAX_SAMPLE_VALUE
+            }
+        }
+    }
 }
 
 fn mix_samples(a: i16, b: i16) -> i16 {
@@ -129,5 +168,18 @@ fn mix_samples(a: i16, b: i16) -> i16 {
         mixed as i16
     } else {
         i16::MAX
+    }
+}
+
+fn mix_samples_i32(a: i32, b: i32) -> i32 {
+    let mixed = (a as i64) + (b as i64);
+
+    // Merge samples and cut off any clipping
+    if mixed <= (i32::MIN as i64) {
+        i32::MIN
+    } else if mixed < (i32::MAX as i64) {
+        mixed as i32
+    } else {
+        i32::MAX
     }
 }
