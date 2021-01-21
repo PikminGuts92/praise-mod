@@ -49,7 +49,7 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
     }
 
     info!(
-        "Creating song pack with name \"{}\" and id \"{:03}\"",
+        "Creating song pack with name \"{}\" and id {:03}",
         pack_name,
         pack_id
     );
