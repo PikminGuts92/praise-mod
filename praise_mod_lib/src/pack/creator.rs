@@ -3,6 +3,7 @@ use crate::chart::*;
 use crate::image::*;
 use crate::midi::*;
 use crate::pack::*;
+use crate::shared::*;
 use crate::song::*;
 use crate::xml::*;
 use log::{info, warn};
