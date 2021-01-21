@@ -12,7 +12,7 @@ pub struct PackCreatorApp {
     pub output_path: String,
     #[clap(long, short, about = "Name of song pack")]
     pub name: Option<String>,
-    #[clap(long, short, default_value = "4", about = "Numeric id for song pack (must be between 4-98")]
+    #[clap(long, short, default_value = "4", about = "Numeric id for song pack (must be between 4-98)")]
     pub id: u8,
 }
 
@@ -21,8 +21,8 @@ impl PackCreatorApp {
         PackOptions {
             songs_path: self.songs_path
                 .to_owned(),
-            output_path: self.output_path.
-                to_owned(),
+            output_path: self.output_path
+                .to_owned(),
             name: self.name
                 .to_owned(),
             id: self.id

@@ -6,7 +6,7 @@ use crate::pack::*;
 use crate::shared::*;
 use crate::song::*;
 use crate::xml::*;
-use log::{info, warn};
+use log::{debug, info, warn};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
@@ -18,26 +18,69 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
     let overall_start_time = Instant::now();
 
     let song_paths = find_dirs_with_file_name(&ops.songs_path, "song.ini")?;
+    let song_count = song_paths.len();
+
+    match song_count {
+        0 => {
+            warn!("No songs found in \"{}\"", &ops.songs_path);
+            return Ok(())
+        },
+        1 => {
+            info!("Found 1 song");
+        },
+        1000..=usize::MAX => {
+            warn!("Found {} songs which is over 1000 song limit", song_count);
+            return Ok(())
+        },
+        _ => {
+            info!("Found {} songs", song_count);
+        }
+    }
 
     let pack_name = match &ops.name {
         Some(n) => n,
         None => "Custom Song Pack",
     };
     let pack_id = ops.id;
+
+    if pack_id < 4 || pack_id > 98 {
+        warn!("Pack id of \"{:03}\" is not valid. Must be between 4-98", pack_id);
+        return Ok(())
+    }
+
+    info!(
+        "Creating song pack with name \"{}\" and id \"{:03}\"",
+        pack_name,
+        pack_id
+    );
+
     let mut song_id = 0u16;
     let output_dir = Path::new(&ops.output_path)
         .join(format!("ep{:02}", pack_id));
     let mut song_builder = XmlSongMetaBuilder::new(pack_name, pack_id);
 
     // Iterate over song directories
-    for path in &song_paths {
+    for (i, path) in song_paths.iter().enumerate() {
         let song_meta = convert_song(path, pack_id, song_id, &output_dir);
         if song_meta.is_err() {
-            warn!("Error parsing song, skipping");
+            warn!(
+                "({}/{}) Error parsing song in \"{}\", skipping",
+                i+1,
+                song_count,
+                path.to_str().unwrap());
             continue;
         }
+
         let song_meta = song_meta?;
         song_builder.add_song(&song_meta, song_id);
+
+        info!(
+            "({}/{}) Successfully converted \"{} - {}\"",
+            i+1,
+            song_count,
+            &song_meta.name,
+            &song_meta.artist);
+
         song_id += 1; // Increment song id
     }
 
@@ -60,9 +103,9 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
 fn format_duration(duration: &Duration) -> String {
     let total = duration.as_millis();
 
-    let milli =  total % 1000;
-    let secs =  (total /  1000           ) % 60;
-    let mins =  (total / (1000 * 60)     ) % 60;
+    let milli =  total %  1000;
+    let secs  = (total /  1000           ) % 60;
+    let mins  = (total / (1000 * 60)     ) % 60;
     let hours = (total / (1000 * 60 * 60)) % 60;
 
     format!(
@@ -75,12 +118,12 @@ fn format_duration(duration: &Duration) -> String {
 }
 
 fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Result<SongMeta, Box<dyn Error>> {
-    info!("Parsing song in \"{}\"", path.to_str().unwrap());
+    debug!("Parsing song in \"{}\"", path.to_str().unwrap());
 
     let song_ini = path.join("song.ini");
     let song_meta = SongMeta::from_path(&song_ini)?;
 
-    info!("Song Information\n\tTitle: {}\n\tArtist: {}\n\tAlbum: {}\n\tYear: {}",
+    debug!("Song Information\n\tTitle: {}\n\tArtist: {}\n\tAlbum: {}\n\tYear: {}",
         song_meta.name,
         song_meta.artist,
         song_meta.album,
