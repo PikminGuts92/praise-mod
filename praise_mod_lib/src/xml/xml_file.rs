@@ -47,7 +47,12 @@ impl XmlFile {
 
             if t.eq("+") {
                 continue;
-            } else if t.ends_with("-") || t.ends_with("=") {
+            } else if t.eq("+-") || t.eq("+=") {
+                // Found in some NS-era GH converts
+                prev_concat = true;
+                continue;
+            }
+            else if t.ends_with("-") || t.ends_with("=") {
                 has_dash = true;
             } else if t.ends_with("#") {
                 is_unpitched = true;
