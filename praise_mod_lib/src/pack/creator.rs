@@ -11,8 +11,12 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
+    // Start timer
+    let overall_start_time = Instant::now();
+
     let song_paths = find_dirs_with_file_name(&ops.songs_path, "song.ini")?;
 
     let pack_name = match &ops.name {
@@ -24,6 +28,7 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
     let output_dir = Path::new(&ops.output_path)
         .join(format!("ep{:02}", pack_id));
     let mut song_builder = XmlSongMetaBuilder::new(pack_name, pack_id);
+
     // Iterate over song directories
     for path in &song_paths {
         let song_meta = convert_song(path, pack_id, song_id, &output_dir);
@@ -35,14 +40,38 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
         song_builder.add_song(&song_meta, song_id);
         song_id += 1; // Increment song id
     }
+
     if song_id == 0 {
         warn!("No songs found in input directory");
         return Ok(());
     }
+
     // Write song pack xml
     let xml_meta = song_builder.to_xml_meta();
     xml_meta.write_to_file(&output_dir.join("master.xml"))?;
+
+    // End timer
+    let total_time = format_duration(&overall_start_time.elapsed());
+    info!("Complete in {}", &total_time);
+
     Ok(())
+}
+
+fn format_duration(duration: &Duration) -> String {
+    let total = duration.as_millis();
+
+    let milli =  total % 1000;
+    let secs =  (total /  1000           ) % 60;
+    let mins =  (total / (1000 * 60)     ) % 60;
+    let hours = (total / (1000 * 60 * 60)) % 60;
+
+    format!(
+        "{:02}h:{:02}m:{:02}s:{:03}ms",
+        hours,
+        mins,
+        secs,
+        milli
+    )
 }
 
 fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Result<SongMeta, Box<dyn Error>> {
