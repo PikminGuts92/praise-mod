@@ -564,6 +564,7 @@ dependencies = [
  "lewton",
  "log",
  "nom",
+ "rayon",
  "rust-ini",
  "thiserror",
  "vorbis-encoder",

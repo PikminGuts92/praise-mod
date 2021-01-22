@@ -7,6 +7,7 @@ use crate::shared::*;
 use crate::song::*;
 use crate::xml::*;
 use log::{debug, error, info, warn};
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
@@ -316,6 +317,14 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
 
             // Multiple stems found, mix and re-encode
             let mut ogg_writer = None;
+
+            // Decode audio in parallel
+            ogg_stems
+                .par_iter_mut()
+                .for_each(|reader| {
+                    reader.read_to_end();
+                });
+
             for ogg_file in ogg_stems.iter_mut() {
                 if ogg_writer.is_none() {
                     ogg_writer = Some(AudioWriter::new(common_sample_rate));
@@ -323,7 +332,7 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
 
                 if let Some(writer) = &mut ogg_writer {
                     // Decode audio
-                    ogg_file.read_to_end();
+                    // ogg_file.read_to_end();
 
                     if ogg_file.get_sample_rate() != common_sample_rate {
                         // Resample audio to properly merge
