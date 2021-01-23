@@ -3,7 +3,10 @@ use super::AudioReaderError;
 use fon::mono::Mono16;
 use fon::stereo::Stereo16;
 use fon::{Audio, Sink, Stream};
+use lewton::VorbisError;
+use lewton::audio::AudioReadError;
 use lewton::inside_ogg::OggStreamReader;
+use log::{debug, warn};
 use std::{convert::AsRef, iter::Zip};
 use std::fs::File;
 use std::path::{Path};
@@ -96,6 +99,8 @@ impl AudioReader for OggReader {
             self.samples.push(Vec::new());
         }
 
+        let mut packet_index = 0;
+
         loop {
             // Decode packet
             // If error or no packet data, break out of loop
@@ -104,7 +109,20 @@ impl AudioReader for OggReader {
                     Some(pkt) => pkt,
                     None => break,
                 },
-                Err(_) => break,
+                Err(err) => {
+                    warn!("Error parsing ogg packet {}: {}", packet_index, &err);
+
+                    // Skip packet if bad audio or break out of loop otherwise
+                    match &err {
+                        VorbisError::BadAudio(audio_err) => {
+                            match audio_err {
+                                AudioReadError::AudioBadFormat => continue,
+                                _ => break,
+                            }
+                        },
+                        _ => break,
+                    }
+                },
             };
 
             // Iterate over channels and append samples
@@ -113,6 +131,8 @@ impl AudioReader for OggReader {
                 .enumerate() {
                 self.samples[i].append(channel_samples);
             }
+
+            packet_index += 1;
         }
 
         self.eof = true;
