@@ -289,11 +289,11 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
 
     match ogg_stem_paths.len() {
         0 => return Ok(()), // TODO: Return error (no audio found)
-        1 => {
+        /* 1 => {
             // Only single stem found, no need for re-encoding
             let backing_path = ogg_stem_paths[0];
             ogg_to_dpo(backing_path, &gp_backing_file_path)?;
-        },
+        }, */
         _ => {
             // Read each ogg stem (initial metadata)
             let mut ogg_stems: Vec<OggReader> = ogg_stem_paths
@@ -363,7 +363,7 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
             ogg_to_dpo(&gp_backing_file_path, &gp_backing_file_path)?;
 
             // Generate preview audio
-            let preview_writer = ogg_writer.create_sub_writer(20_000.0, 30_000.0);
+            let preview_writer = create_preview_audio(&ogg_writer);
             preview_writer.save_as_ogg(&gp_preview_file_path, None);
             ogg_preview_path = Some(&gp_preview_file_path);
         }
@@ -387,4 +387,14 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
     }
 
     Ok(())
+}
+
+fn create_preview_audio(mixed_audio: &AudioWriter) -> AudioWriter {
+    let (start_pos, preview_len) = match mixed_audio.get_length_in_ms() {
+        l if l >= 50_000.0 => (20_000.0, 30_000.0),
+        l if l >= 30_000.0 => ((l - 30_000.0), 30_000.0),
+        l => (0.0, l),
+    };
+
+    mixed_audio.create_sub_writer(start_pos, preview_len)
 }
