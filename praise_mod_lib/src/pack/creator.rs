@@ -124,11 +124,12 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
     let song_ini = path.join("song.ini");
     let song_meta = SongMeta::from_path(&song_ini)?;
 
-    debug!("Song Information\n\tTitle: {}\n\tArtist: {}\n\tAlbum: {}\n\tYear: {}",
+    debug!("Song Information\n\tTitle: {}\n\tArtist: {}\n\tAlbum: {}\n\tYear: {}\n\tPreview: {}",
         song_meta.name,
         song_meta.artist,
         song_meta.album,
         song_meta.year,
+        song_meta.preview_start.unwrap_or(0),
     );
 
     let full_song_id = format!("{:02}{:03}", pack_id, song_id);
@@ -147,7 +148,7 @@ fn convert_song(path: &Path, pack_id: u8, song_id: u16, output_dir: &Path) -> Re
     convert_song_art(path, &output_dir, &full_song_id)?;
 
     // Convert audio
-    convert_song_audio(path, &output_dir, &full_song_id)?;
+    convert_song_audio(path, &output_dir, &full_song_id, &song_meta)?;
 
     Ok(song_meta)
 }
@@ -262,7 +263,7 @@ fn is_file_preview<T: AsRef<Path>>(file_path: T, ext: &str) -> bool {
     }
 }
 
-fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
+fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str, song_meta: &SongMeta) -> Result<(), Box<dyn Error>> {
     let ogg_paths = get_files_in_dir(path, Some(&"ogg"))?;
 
     let mut ogg_preview_path = None;
@@ -363,7 +364,7 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
             ogg_to_dpo(&gp_backing_file_path, &gp_backing_file_path)?;
 
             // Generate preview audio
-            let preview_writer = create_preview_audio(&ogg_writer);
+            let preview_writer = create_preview_audio(&ogg_writer, song_meta.preview_start.unwrap_or(20_000));
             preview_writer.save_as_ogg(&gp_preview_file_path, None);
             ogg_preview_path = Some(&gp_preview_file_path);
         }
@@ -389,10 +390,13 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
     Ok(())
 }
 
-fn create_preview_audio(mixed_audio: &AudioWriter) -> AudioWriter {
+fn create_preview_audio(mixed_audio: &AudioWriter, preview_start: u32) -> AudioWriter {
+    let preview_start = preview_start as f64;
+    let preview_time = 30_000.0;
+
     let (start_pos, preview_len) = match mixed_audio.get_length_in_ms() {
-        l if l >= 50_000.0 => (20_000.0, 30_000.0),
-        l if l >= 30_000.0 => ((l - 30_000.0), 30_000.0),
+        l if l >= (preview_start + preview_time) => (preview_start, preview_time),
+        l if l >= preview_time => ((l - preview_time), preview_time),
         l => (0.0, l),
     };
 
