@@ -25,7 +25,7 @@ struct Options {
 enum SubCommand {
     #[clap(name = "mid2xml", about = "Convert gh/rb mid to guitar praise xml")]
     Mid2Xml(Mid2XmlApp),
-    #[clap(name = "packcreator", about = "Create guitar praise pack from CH song directory")]
+    #[clap(name = "packcreate", about = "Create guitar praise pack from CH song directory")]
     PackCreator(PackCreatorApp),
 }
 
