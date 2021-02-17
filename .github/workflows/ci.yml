@@ -51,8 +51,9 @@ jobs:
       - name: Zip files
         shell: bash
         working-directory: $GITHUB_WORKSPACE
-        run: .github/scripts/package_files.sh -b $GITHUB_WORKSPACE/target/release -o $GITHUB_WORKSPACE/build -z "praise-mod-ci-$GITHUB_SHA.zip"
+        run: $GITHUB_WORKSPACE/.github/scripts/package_files.sh -b $GITHUB_WORKSPACE/target/release -o $GITHUB_WORKSPACE/build -z "praise-mod-ci-$GITHUB_SHA.zip"
+      - run: echo $GITHUB_WORKSPACE/build/praise-mod-ci-$GITHUB_SHA.zip
       - uses: actions/upload-artifact@v2
         with:
-          name: praise-mod-ci-$GITHUB_SHA.zip
-          path: $GITHUB_WORKSPACE/build/praise-mod-ci-$GITHUB_SHA.zip
+          name: praise-mod-ci-${{ github.sha }}.zip
+          path: ${{ github.workspace }}/build/praise-mod-ci-${{ github.sha }}.zip

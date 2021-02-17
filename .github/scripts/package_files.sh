@@ -19,11 +19,11 @@ done
 ZIP_PATH="$OUTPUT_PATH/$ZIP_NAME"
 
 # Clear previous build
-echo ">> Clearing old files"
+echo ">> Clearing old files at $OUTPUT_PATH"
 rm $OUTPUT_PATH -rf
 
 # Create directory
-echo ">> Creating output directory"
+echo ">> Creating output directory at $OUTPUT_PATH"
 mkdir -p $OUTPUT_PATH
 
 # Copy licences + README
@@ -33,11 +33,13 @@ cp ./LICENSE $OUTPUT_PATH/LICENSE -f
 cp ./README.md $OUTPUT_PATH/README.md -f
 
 # Copy executables
-EXES=$(find target/release/ -maxdepth 1 -type f -executable -print)
+echo ">> Finding executables at $BIN_PATH"
+EXES=$(find $BIN_PATH -maxdepth 1 -type f -executable -print)
 for exe in $EXES; do
+    echo "\t>> Copying $(basename $exe)"
     cp $exe $OUTPUT_PATH/$(basename $exe) -f
 done
 
 # Zip everything up
-echo ">> Zipping everything up"
+echo ">> Zipping everything up in $ZIP_PATH"
 zip $ZIP_PATH $OUTPUT_PATH -jr
