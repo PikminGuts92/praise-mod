@@ -51,6 +51,7 @@ jobs:
           command: build
           args: --release --all-features
       - name: Zip files
+        shell: bash
         run: ./.github/scripts/package_files.sh -b ./target/release -o ./build -z ${{ env.ZIP_NAME }}
       - uses: actions/upload-artifact@v2
         with:
