@@ -1,4 +1,4 @@
-# Praise Mod
+# Praise Mod ![CI](https://github.com/PikminGuts92/praise-mod/workflows/CI/badge.svg)
 ## GP Tool
 Multi-purpose tool for creating Guitar Praise customs
 
