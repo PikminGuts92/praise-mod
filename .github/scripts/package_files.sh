@@ -28,14 +28,14 @@ mkdir -p $OUTPUT_PATH
 
 # Copy licences + README
 echo ">> Copying licenses and README"
-cp ./LICENSE ./$OUTPUT_PATH/LICENSE -f
-# cp ./THIRDPARTY ./$OUTPUT_PATH/THIRDPARTY -f
-cp ./README.md ./$OUTPUT_PATH/README.md -f
+cp ./LICENSE $OUTPUT_PATH/LICENSE -f
+# cp ./THIRDPARTY $OUTPUT_PATH/THIRDPARTY -f
+cp ./README.md $OUTPUT_PATH/README.md -f
 
 # Copy executables
 EXES=$(find target/release/ -maxdepth 1 -type f -executable -print)
 for exe in $EXES; do
-    cp $exe ./$OUTPUT_PATH/$(basename $exe) -f
+    cp $exe $OUTPUT_PATH/$(basename $exe) -f
 done
 
 # Zip everything up
