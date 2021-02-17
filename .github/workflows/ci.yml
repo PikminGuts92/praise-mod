@@ -38,8 +38,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     env:
-      OS: "${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}" # Hacky way to lowercase os name
-      ZIP_NAME: praise-mod-ci-${{ github.sha }}-${{ env.OS }}.zip
+      ZIP_NAME: praise-mod-ci-${{ github.sha }}-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}.zip # Hacky way to lowercase os name
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
