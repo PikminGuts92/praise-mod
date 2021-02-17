@@ -1,6 +1,6 @@
 on: [push, pull_request]
 
-name: Continuous integration
+name: CI
 
 jobs:
   check:
@@ -30,3 +30,25 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+
+  build_release:
+    name: Build Release (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features
+      - name: Zip files
+        shell: bash
+        working-directory: $GITHUB_WORKSPACE
+        run: .github/scripts/package_files.sh -b $GITHUB_WORKSPACE/target/release -o $GITHUB_WORKSPACE/build -z "praise-mod-ci-$GITHUB_SHA.zip"
