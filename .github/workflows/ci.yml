@@ -31,12 +31,12 @@ jobs:
         with:
           command: test
 
-  build_release:
-    name: Build Release (${{ matrix.os }})
+  build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
