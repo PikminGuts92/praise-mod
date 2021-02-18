@@ -39,6 +39,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     env:
       ZIP_NAME: praise-mod-ci-${{ github.sha }}-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}.zip # Hacky way to lowercase os name
+      BIN_PATH: ./target/release
+      OUTPUT_PATH: ./build
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -50,9 +52,23 @@ jobs:
         with:
           command: build
           args: --release --all-features
-      - name: Zip files
+      - name: Create output directory and copy licenses
         shell: bash
-        run: ./.github/scripts/package_files.sh -b ./target/release -o ./build -z ${{ env.ZIP_NAME }}
+        run: |
+          mkdir -p $OUTPUT_PATH
+          cp ./LICENSE $OUTPUT_PATH/LICENSE -f
+          cp ./README.md $OUTPUT_PATH/README.md -f
+      - name: Copy executables to output directory
+        shell: bash
+        run: |
+          for exe in $(find $BIN_PATH -maxdepth 1 -type f -executable -print); do
+            cp $exe $OUTPUT_PATH/$(basename $exe) -f
+          done
+      - uses: papeloto/action-zip@v1
+        with:
+          files: ${{ env.OUTPUT_PATH }}
+          recursive: false
+          dest: ./build/${{ env.ZIP_NAME }}
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ env.ZIP_NAME }}
