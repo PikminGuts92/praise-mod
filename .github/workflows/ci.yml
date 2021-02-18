@@ -64,11 +64,9 @@ jobs:
           for exe in $(find $BIN_PATH -maxdepth 1 -type f -executable -print); do
             cp $exe $OUTPUT_PATH/$(basename $exe) -f
           done
-      - uses: papeloto/action-zip@v1
-        with:
-          files: ${{ env.OUTPUT_PATH }}
-          recursive: false
-          dest: ./build/${{ env.ZIP_NAME }}
+      - name: Zip files
+        shell: bash
+        run: 7z a ./build/$ZIP_NAME $(find $OUTPUT_PATH -type f)
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ env.ZIP_NAME }}
