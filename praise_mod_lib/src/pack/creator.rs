@@ -21,6 +21,7 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
 
     let song_paths = find_dirs_with_file_name(&ops.songs_path, "song.ini")?;
     let song_count = song_paths.len();
+    let digit_count: usize;
 
     match song_count {
         0 => {
@@ -28,6 +29,7 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
             return Ok(())
         },
         1 => {
+            digit_count = 0;
             info!("Found 1 song");
         },
         1000..=usize::MAX => {
@@ -35,6 +37,13 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
             return Ok(())
         },
         _ => {
+            // Update digit count
+            digit_count = match song_count {
+                0..=9 => 1,
+                10..=99 => 2,
+                _ => 3
+            };
+
             info!("Found {} songs", song_count);
         }
     }
@@ -88,21 +97,25 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
 
             if song_meta.is_err() {
                 warn!(
-                    "({}/{}) Error parsing song in \"{}\", skipping",
+                    "({:0width$}/{}) Error parsing song in \"{}\", skipping",
                     i,
                     song_count,
-                    path.to_str().unwrap());
+                    path.to_str().unwrap(),
+                    width = digit_count
+                );
                 return None
             }
 
             let song_meta = song_meta.unwrap();
 
             info!(
-                "({}/{}) Successfully converted \"{} - {}\"",
+                "({:0width$}/{}) Successfully converted \"{} - {}\"",
                 i,
                 song_count,
                 &song_meta.name,
-                &song_meta.artist);
+                &song_meta.artist,
+                width = digit_count
+            );
 
             // Increment global song id
             *global_song_id.lock().unwrap() += 1;
