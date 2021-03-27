@@ -13,6 +13,7 @@ use std::error::Error;
 use std::fs::{copy, create_dir_all, read, write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
+use std::sync::{Arc, Mutex};
 
 pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
     // Start timer
@@ -55,39 +56,72 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
         pack_id
     );
 
-    let mut song_id = 0u16;
     let output_dir = Path::new(&ops.output_path)
         .join(format!("ep{:02}", pack_id));
-    let mut song_builder = XmlSongMetaBuilder::new(pack_name, pack_id);
+
+    let global_song_index = Arc::new(Mutex::new(0));
+    let global_song_id = Arc::new(Mutex::new(0u16));
 
     // Iterate over song directories
-    for (i, path) in song_paths.iter().enumerate() {
-        let song_meta = convert_song(path, pack_id, song_id, &output_dir);
-        if song_meta.is_err() {
-            warn!(
-                "({}/{}) Error parsing song in \"{}\", skipping",
-                i+1,
+    let song_results: Vec<(SongMeta, u16)> = song_paths
+        .par_iter()
+        .map(|path| {
+            let song_id: u16;
+            {
+                // Assign value from global song id to local
+                song_id = *global_song_id.lock().unwrap();
+            }
+
+            // Attempt to convert song
+            let song_meta = convert_song(path, pack_id, song_id, &output_dir);
+
+            // Update index
+            let i: i32;
+            {
+                // Increment song index
+                let mut song_index = global_song_index.lock().unwrap();
+                *song_index += 1;
+
+                // Assign value from global index to local
+                i = *song_index;
+            }
+
+            if song_meta.is_err() {
+                warn!(
+                    "({}/{}) Error parsing song in \"{}\", skipping",
+                    i,
+                    song_count,
+                    path.to_str().unwrap());
+                return None
+            }
+
+            let song_meta = song_meta.unwrap();
+
+            info!(
+                "({}/{}) Successfully converted \"{} - {}\"",
+                i,
                 song_count,
-                path.to_str().unwrap());
-            continue;
-        }
+                &song_meta.name,
+                &song_meta.artist);
 
-        let song_meta = song_meta?;
-        song_builder.add_song(&song_meta, song_id);
+            // Increment global song id
+            *global_song_id.lock().unwrap() += 1;
 
-        info!(
-            "({}/{}) Successfully converted \"{} - {}\"",
-            i+1,
-            song_count,
-            &song_meta.name,
-            &song_meta.artist);
+            return Some((song_meta, song_id))
+        })
+        .filter(|res| res.is_some())
+        .map(|res| res.unwrap())
+        .collect();
 
-        song_id += 1; // Increment song id
+    if song_results.len() == 0 {
+        error!("No songs found could be converted");
+        return Ok(());
     }
 
-    if song_id == 0 {
-        error!("No songs found in input directory");
-        return Ok(());
+    // Add songs to builder
+    let mut song_builder = XmlSongMetaBuilder::new(pack_name, pack_id);
+    for (meta, id) in song_results.iter() {
+        song_builder.add_song(meta, *id);
     }
 
     // Write song pack xml
