@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup logging
     CombinedLogger::init(
         vec![
-            TermLogger::new(LOG_LEVEL, log_config, TerminalMode::Mixed),
+            TermLogger::new(LOG_LEVEL, log_config, TerminalMode::Mixed, ColorChoice::Auto),
         ]
     )?;
 
