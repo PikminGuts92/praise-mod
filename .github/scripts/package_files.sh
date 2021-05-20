@@ -29,7 +29,7 @@ mkdir -p $OUTPUT_PATH
 # Copy licences + README
 echo ">> Copying licenses and README"
 cp ./LICENSE $OUTPUT_PATH/LICENSE -f
-# cp ./THIRDPARTY $OUTPUT_PATH/THIRDPARTY -f
+cp ./THIRDPARTY $OUTPUT_PATH/THIRDPARTY -f
 cp ./README.md $OUTPUT_PATH/README.md -f
 
 # Copy executables
