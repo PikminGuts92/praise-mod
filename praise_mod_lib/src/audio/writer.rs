@@ -156,6 +156,12 @@ impl AudioWriter {
             }
         }
     }
+
+    pub fn make_silent(&mut self) {
+        for s in self.samples.iter_mut() {
+            *s = 0;
+        }
+    }
 }
 
 fn mix_samples(a: i16, b: i16) -> i16 {

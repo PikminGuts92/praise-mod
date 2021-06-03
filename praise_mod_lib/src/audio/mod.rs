@@ -34,3 +34,9 @@ pub fn save_dpo_slience(out_path: &Path) -> Result<(), Box<dyn Error>> {
     write(&out_path, &SILENT_DPO)?;
     Ok(())
 }
+
+pub fn copy_ogg_file(in_path: &Path, out_path: &Path) -> Result<(), Box<dyn Error>> {
+    // Copy file
+    copy(&in_path, &out_path)?;
+    Ok(())
+}

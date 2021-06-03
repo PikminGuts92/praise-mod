@@ -325,12 +325,6 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str, song_m
     let gp_backing_file_path = output_dir.join(format!("GPM{}.dpo", full_song_id));
     let gp_preview_file_path = output_dir.join(format!("GPP{}.dpo", full_song_id));
 
-    let gp_guitar_file_paths = (0..4)
-        .map(|i| output_dir.join(format!("GPG{}_{}.dpo", full_song_id, i)));
-
-    let gp_bass_file_paths = (0..2)
-        .map(|i| output_dir.join(format!("GPB{}_{}.dpo", full_song_id, i)));
-
     match ogg_stem_paths.len() {
         0 => return Ok(()), // TODO: Return error (no audio found)
         /* 1 => {
@@ -410,17 +404,11 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str, song_m
             let preview_writer = create_preview_audio(&ogg_writer, song_meta.preview_start.unwrap_or(20_000));
             preview_writer.save_as_ogg(&gp_preview_file_path, None);
             ogg_preview_path = Some(&gp_preview_file_path);
+
+            // Write silence for instrument "stems"
+            ogg_writer.make_silent();
+            save_instrument_stems(&ogg_writer, output_dir, full_song_id)?;
         }
-    }
-
-    // Write silence for guitar tracks
-    for out_guitar_path in gp_guitar_file_paths {
-        save_dpo_slience(&out_guitar_path)?;
-    }
-
-    // Write silence for bass tracks
-    for out_bass_path in gp_bass_file_paths {
-        save_dpo_slience(&out_bass_path)?;
     }
 
     if let Some(prevew_path) = ogg_preview_path {
@@ -444,4 +432,25 @@ fn create_preview_audio(mixed_audio: &AudioWriter, preview_start: u32) -> AudioW
     };
 
     mixed_audio.create_sub_writer(start_pos, preview_len)
+}
+
+fn save_instrument_stems(silent_audio: &AudioWriter, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
+    // Create paths for guitar/bass stems
+    let audio_paths: Vec<PathBuf> = (0..4)
+        .map(|i| output_dir.join(format!("GPG{}_{}.dpo", full_song_id, i)))
+        .chain((0..2)
+            .map(|i| output_dir.join(format!("GPB{}_{}.dpo", full_song_id, i))))
+        .collect();
+
+    // Save and "encrypt"
+    let audio_path = &audio_paths[0];
+    silent_audio.save_as_ogg(&audio_path, None);
+    ogg_to_dpo(&audio_path, &audio_path)?;
+
+    // Copy audio for other paths
+    for out_audio_path in audio_paths.iter().skip(1) {
+        copy_ogg_file(&audio_path, &out_audio_path)?;
+    }
+
+    Ok(())
 }
