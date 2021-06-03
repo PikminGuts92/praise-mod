@@ -1,6 +1,6 @@
 [package]
 name = "gp_tool"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["PikminGuts92"]
 edition = "2018"
 

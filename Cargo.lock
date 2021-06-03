@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "gp_tool"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "clap",
  "log",
@@ -559,7 +559,7 @@ checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
 
 [[package]]
 name = "praise_mod_lib"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "fon",
  "ghakuf",
