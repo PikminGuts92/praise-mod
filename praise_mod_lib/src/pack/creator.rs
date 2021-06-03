@@ -69,17 +69,13 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
         .join(format!("ep{:02}", pack_id));
 
     let global_song_index = Arc::new(Mutex::new(0));
-    let global_song_id = Arc::new(Mutex::new(0u16));
 
     // Iterate over song directories
-    let song_results: Vec<(SongMeta, u16)> = song_paths
+    let mut song_results: Vec<(SongMeta, u16)> = song_paths
         .par_iter()
-        .map(|path| {
-            let song_id: u16;
-            {
-                // Assign value from global song id to local
-                song_id = *global_song_id.lock().unwrap();
-            }
+        .enumerate()
+        .map(|(id, path)| {
+            let song_id = id as u16; // Use index as id
 
             // Attempt to convert song
             let song_meta = convert_song(path, pack_id, song_id, &output_dir);
@@ -117,9 +113,6 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
                 width = digit_count
             );
 
-            // Increment global song id
-            *global_song_id.lock().unwrap() += 1;
-
             return Some((song_meta, song_id))
         })
         .filter(|res| res.is_some())
@@ -130,6 +123,9 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
         error!("No songs found could be converted");
         return Ok(());
     }
+
+    // Sort songs by id
+    song_results.sort_by(|a, b| a.1.cmp(&b.1));
 
     // Add songs to builder
     let mut song_builder = XmlSongMetaBuilder::new(pack_name, pack_id);
