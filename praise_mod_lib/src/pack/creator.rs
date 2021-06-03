@@ -10,7 +10,7 @@ use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs::{copy, create_dir_all, read, write};
+use std::fs::{copy, create_dir_all, read, remove_dir_all, write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
@@ -99,6 +99,18 @@ pub fn create_pack(ops: &PackOptions) -> Result<(), Box<dyn Error>> {
                     path.to_str().unwrap(),
                     width = digit_count
                 );
+
+                // Clean up song data
+                let song_dir = output_dir
+                    .join(&format!("{:03}", song_id));
+
+                if song_dir.exists() {
+                    if let Err(err) = remove_dir_all(song_dir) {
+                        // Print error
+                        error!("{:?}", err);
+                    }
+                }
+
                 return None
             }
 
