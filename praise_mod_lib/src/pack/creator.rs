@@ -326,7 +326,7 @@ fn convert_song_audio(path: &Path, output_dir: &Path, full_song_id: &str, song_m
     let gp_preview_file_path = output_dir.join(format!("GPP{}.dpo", full_song_id));
 
     match ogg_stem_paths.len() {
-        0 => return Ok(()), // TODO: Return error (no audio found)
+        0 => return Err(Box::new(PackCreateError::NoAudioFound)),
         /* 1 => {
             // Only single stem found, no need for re-encoding
             let backing_path = ogg_stem_paths[0];
