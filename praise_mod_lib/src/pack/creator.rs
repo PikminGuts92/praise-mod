@@ -286,10 +286,15 @@ fn convert_song_chart(path: &Path, output_dir: &Path, full_song_id: &str) -> Res
 }
 
 fn convert_song_art(path: &Path, output_dir: &Path, full_song_id: &str) -> Result<(), Box<dyn Error>> {
-    let album_art_path = path.join("album.png");
+    let mut album_art_path = path.join("album.png");
     if !album_art_path.exists() {
-        info!("No album art found");
-        return Ok(());
+        // Fallback to .jpg
+        album_art_path = path.join("album.jpg");
+
+        if !album_art_path.exists() {
+            info!("No album art found");
+            return Ok(());
+        }
     }
 
     // Copy album art to gp song directory
