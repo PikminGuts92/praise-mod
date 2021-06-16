@@ -1,0 +1,9 @@
+[package]
+name = "pack_maker"
+version = "1.0.2"
+authors = ["PikminGuts92"]
+edition = "2018"
+
+[dependencies]
+eframe = "0.12.0"
+praise_mod_lib = { path = "../praise_mod_lib" }

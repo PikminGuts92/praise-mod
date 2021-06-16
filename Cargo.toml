@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "gp_tool",
+    "pack_maker",
     "praise_mod_lib"
 ]
 
