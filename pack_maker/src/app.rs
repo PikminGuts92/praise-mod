@@ -1,7 +1,10 @@
-use eframe::{egui::{self, Color32}, epi};
+use eframe::{egui::{self, Align2, Color32, Pos2}, epi};
+use native_dialog::{FileDialog, MessageDialog, MessageType};
 
 pub struct PackApp {
     headers: Vec<String>,
+    pack_name: String,
+    pack_id: u8,
 }
 
 impl Default for PackApp {
@@ -14,6 +17,8 @@ impl Default for PackApp {
                 String::from("progress"),
                 String::from("options"),
             ],
+            pack_name: String::from("Custom Song Pack"),
+            pack_id: 4
         }
     }
 }
@@ -24,7 +29,7 @@ impl PackApp {
             .show(ui, |ui| {
                 egui::Grid::new("song_grid")
                     .striped(true)
-                    .min_col_width(50.0)
+                    .min_col_width(100.0)
                     .min_row_height(12.0)
                     .show(ui, |ui| {
                         // Header
@@ -38,6 +43,13 @@ impl PackApp {
                             ui.label("col 1");
                             ui.label("col 2");
                             ui.label("col 3");
+
+                            /*ui.painter().text(
+                                Pos2::new(ui.min_rect().left() + 100.0, ui.min_rect().top() + 100.0),
+                                Align2::CENTER_CENTER,
+                                "test",
+                                egui::TextStyle::Heading,
+                                ui.visuals().text_color());*/
 
                             ui.end_row();
                         }
@@ -70,6 +82,28 @@ impl epi::App for PackApp {
         // Main content
         egui::CentralPanel::default()
             .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Name:");
+                    ui.text_edit_singleline(&mut self.pack_name);
+
+                    ui.label("Id:");
+                    ui.add(egui::DragValue::new(&mut self.pack_id)
+                        .clamp_range(4..=99)
+                        .speed(1.0)
+                        .fixed_decimals(0));
+
+                        if ui.button("Add Songs").clicked() {
+                            let path = FileDialog::new()
+                                //.set_location("~/Desktop")
+                                .show_open_single_dir()
+                                .unwrap();
+                        }
+
+                        ui.button("Build");
+                });
+
+                ui.separator();
+
                 self.show_song_grid(ui);
             });
     }
