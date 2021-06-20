@@ -7,6 +7,10 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
+      - name: Install linux dependencies
+        shell: bash
+        run: |
+          sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -21,6 +25,10 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      - name: Install linux dependencies
+        shell: bash
+        run: |
+          sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -42,6 +50,11 @@ jobs:
       BIN_PATH: ./target/release
       OUTPUT_PATH: ./build
     steps:
+      - name: Install linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
