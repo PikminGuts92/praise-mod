@@ -2,7 +2,7 @@
 name = "praise_mod_lib"
 version = "1.0.2"
 authors = ["PikminGuts92"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 fon = "0.5.0"
@@ -10,7 +10,7 @@ ghakuf = "0.5.6"
 image = "0.23.12"
 lewton = "0.10.1"
 log = "0.4.11"
-nom = "6.2.0"
+nom = "7.1.0"
 rayon = "1.5.0"
 rust-ini = "0.17.0"
 thiserror = "1.0.20"
