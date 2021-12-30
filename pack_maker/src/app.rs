@@ -1,4 +1,4 @@
-use eframe::{egui::{self, Align2, Color32, Pos2}, epi};
+use eframe::{egui::{self, Align2, Color32, Pos2}, epi::{self, Frame, Storage}};
 use native_dialog::{FileDialog, MessageDialog, MessageType};
 
 pub struct PackApp {
@@ -25,7 +25,7 @@ impl Default for PackApp {
 
 impl PackApp {
     fn show_song_grid(&self, ui: &mut egui::Ui) {
-        egui::ScrollArea::auto_sized()
+        egui::ScrollArea::new([true, true])
             .show(ui, |ui| {
                 egui::Grid::new("song_grid")
                     .striped(true)
@@ -63,15 +63,13 @@ impl epi::App for PackApp {
         "Pack Maker for GP"
     }
 
-    fn load(&mut self, _storage: &dyn epi::Storage) {}
-
     fn save(&mut self, _storage: &mut dyn epi::Storage) {}
 
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
+    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
         // Toolbar menu
-        egui::TopPanel::top("top_panel").show(ctx, |ui| {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                egui::menu::menu(ui, "File", |ui| {
+                egui::menu::menu_button(ui, "File", |ui| {
                     if ui.button("Exit").clicked() {
                         frame.quit();
                     }
@@ -108,7 +106,7 @@ impl epi::App for PackApp {
             });
     }
 
-    fn setup(&mut self, _ctx: &egui::CtxRef) {}
+    fn setup(&mut self, _ctx: &egui::CtxRef, _frame: &Frame, _storage: Option<&dyn Storage>) {}
 
     fn warm_up_enabled(&self) -> bool {
         false
