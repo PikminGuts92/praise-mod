@@ -2,7 +2,7 @@
 name = "praise_mod_lib"
 version = "1.0.2"
 authors = ["PikminGuts92"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 fon = "0.5.0"
