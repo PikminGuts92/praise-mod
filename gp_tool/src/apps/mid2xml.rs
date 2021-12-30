@@ -1,15 +1,15 @@
 use crate::apps::{SubApp};
-use clap::{Clap};
+use clap::Parser;
 use praise_mod_lib::midi::*;
 use praise_mod_lib::xml::*;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct Mid2XmlApp {
-    #[clap(about = "Path to input mid", required = true)]
+    #[clap(help = "Path to input mid", required = true)]
     pub mid_path: String,
-    #[clap(about = "Path to output xml", required = true)]
+    #[clap(help = "Path to output xml", required = true)]
     pub xml_path: String,
 }
 

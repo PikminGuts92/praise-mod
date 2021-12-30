@@ -1,18 +1,18 @@
 use crate::apps::{SubApp};
-use clap::{Clap};
+use clap::Parser;
 use log::{info, warn};
 use praise_mod_lib::pack::*;
 use std::error::Error;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct PackCreatorApp {
-    #[clap(about = "Path to input CH songs directory", required = true)]
+    #[clap(help = "Path to input CH songs directory", required = true)]
     pub songs_path: String,
-    #[clap(about = "Path to output song pack directory", required = true)]
+    #[clap(help = "Path to output song pack directory", required = true)]
     pub output_path: String,
-    #[clap(long, short, about = "Name of song pack")]
+    #[clap(long, short, help = "Name of song pack")]
     pub name: Option<String>,
-    #[clap(long, short, default_value = "4", about = "Numeric id for song pack (must be between 4-98)")]
+    #[clap(long, short, default_value = "4", help = "Numeric id for song pack (must be between 4-98)")]
     pub id: u8,
 }
 
