@@ -1,4 +1,4 @@
-use eframe::{egui::{self, Align2, Color32, Pos2}, epi::{self, Frame, Storage}};
+use eframe::{egui::{self, Align2, Color32, Pos2, Widget}, epi::{self, Frame, Storage}};
 use native_dialog::{FileDialog, MessageDialog, MessageType};
 
 pub struct PackApp {
@@ -25,6 +25,17 @@ impl Default for PackApp {
 
 impl PackApp {
     fn show_song_grid(&self, ui: &mut egui::Ui) {
+        egui::Grid::new("song_grid_header")
+            .min_col_width(100.0)
+            .min_row_height(12.0)
+            .show(ui, |ui| {
+                // Header
+                for h in &self.headers {
+                    ui.label(h);
+                }
+                ui.end_row();
+            });
+
         egui::ScrollArea::vertical()
             .show(ui, |ui| {
                 egui::Grid::new("song_grid")
@@ -32,17 +43,29 @@ impl PackApp {
                     .min_col_width(100.0)
                     .min_row_height(12.0)
                     .show(ui, |ui| {
-                        // Header
+                        /*// Header
                         for h in &self.headers {
                             ui.label(h);
                         }
-                        ui.end_row();
+                        ui.end_row();*/
 
                         // Songs
-                        for _ in 0..100 {
+                        for i in 0..100 {
                             ui.label("col 1");
                             ui.label("col 2");
                             ui.label("col 3");
+                            //ui.label("col 4");
+
+                            //let prog_text = egui::WidgetText::RichText(egui::RichText::new("ERROR").strong().color(egui::epaint::Color32::RED));
+
+                            egui::widgets::ProgressBar::new((i % 10) as f32 / 10.0)
+                                .show_percentage()
+                                //.text(prog_text)
+                                .ui(ui);
+
+                            //ui.label("col 5");
+
+                            ui.button("Remove");
 
                             /*ui.painter().text(
                                 Pos2::new(ui.min_rect().left() + 100.0, ui.min_rect().top() + 100.0),
