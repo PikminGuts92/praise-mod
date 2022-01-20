@@ -25,7 +25,7 @@ impl Default for PackApp {
 
 impl PackApp {
     fn show_song_grid(&self, ui: &mut egui::Ui) {
-        egui::ScrollArea::new([true, true])
+        egui::ScrollArea::vertical()
             .show(ui, |ui| {
                 egui::Grid::new("song_grid")
                     .striped(true)
