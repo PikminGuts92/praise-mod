@@ -6,7 +6,10 @@ use app::*;
 
 fn main() {
     let app = PackApp::default();
-    let ops = eframe::NativeOptions::default();
+    let ops = eframe::NativeOptions {
+        drag_and_drop_support: true,
+        ..eframe::NativeOptions::default()
+    };
 
     eframe::run_native(Box::new(app), ops);
 }

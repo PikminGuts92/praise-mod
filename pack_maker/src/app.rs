@@ -89,6 +89,20 @@ impl epi::App for PackApp {
     fn save(&mut self, _storage: &mut dyn epi::Storage) {}
 
     fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
+        //ctx.request_repaint();
+
+        for f in ctx.input().raw.dropped_files.iter() {
+            if let Some(path) = &f.path {
+                println!("Dropped: {:?}", path);
+            }
+        }
+
+        for f in ctx.input().raw.hovered_files.iter() {
+            if let Some(path) = &f.path {
+                println!("Hovered: {:?}", path);
+            }
+        }
+
         // Toolbar menu
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
