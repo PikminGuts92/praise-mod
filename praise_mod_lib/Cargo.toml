@@ -5,9 +5,11 @@ authors = ["PikminGuts92"]
 edition = "2021"
 
 [dependencies]
+chrono = "0.4"
 fon = "0.5.0"
 ghakuf = "0.5.6"
 image = "0.23.12"
+lazy_static = "1.4.0"
 lewton = "0.10.1"
 log = "0.4.11"
 nom = "7.1.0"

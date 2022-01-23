@@ -1,9 +1,15 @@
+use chrono::prelude::*;
 use ini::Ini;
+use lazy_static::*;
 use log::{info};
 use std::io::Read;
 use std::error::Error;
 use std::fs::{File};
 use std::path::{Path, PathBuf};
+
+lazy_static! {
+    static ref YEAR: i32 = Local::now().year();
+}
 
 #[derive(Clone, Debug)]
 pub struct SongMeta {
@@ -49,8 +55,8 @@ impl SongMeta {
                 None => String::from(""),
             },
             year: match song_section.get("year") {
-                Some(text) => text.parse().unwrap_or(2020),
-                None => 2020,
+                Some(text) => text.parse().unwrap_or(*YEAR),
+                None => *YEAR,
             },
             preview_start: match song_section.get("preview_start_time") {
                 Some(text) => match text.parse() {
