@@ -5,9 +5,9 @@ authors = ["PikminGuts92"]
 edition = "2021"
 
 [dependencies]
-fon = "0.5.0"
+fon = "0.6.0"
 ghakuf = "0.5.6"
-image = "0.23.14"
+image = "0.24.0"
 lewton = "0.10.2"
 log = "0.4.14"
 nom = "7.1.0"
