@@ -5,8 +5,8 @@ authors = ["PikminGuts92"]
 edition = "2021"
 
 [dependencies]
-clap = { version = "3.0.0", features = ["derive"] }
-log = "0.4.11"
+clap = { version = "3.0.14", features = ["derive"] }
+log = "0.4.14"
 praise_mod_lib = { path = "../praise_mod_lib" }
-simplelog = "0.11.1"
-thiserror = "1.0.20"
+simplelog = "0.11.2"
+thiserror = "1.0.30"
