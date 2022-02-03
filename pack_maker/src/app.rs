@@ -35,6 +35,7 @@ impl PackApp {
                 }
                 ui.end_row();
             });
+        ui.separator();
 
         egui::ScrollArea::vertical()
             .show(ui, |ui| {
