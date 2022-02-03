@@ -1482,6 +1482,7 @@ name = "pack_maker"
 version = "1.0.2"
 dependencies = [
  "eframe",
+ "image",
  "native-dialog",
  "praise_mod_lib",
 ]
