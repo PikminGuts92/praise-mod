@@ -6,6 +6,6 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.16.0"
-image = "0.24.0"
+image = { version = "0.24.0", default-features = false, features = [ "png" ] }
 native-dialog = "0.6.1"
 praise_mod_lib = { path = "../praise_mod_lib" }
