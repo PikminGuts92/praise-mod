@@ -1,7 +1,6 @@
 use super::AudioMeta;
 use super::AudioReaderError;
-use fon::mono::Mono16;
-use fon::stereo::Stereo16;
+use fon::chan::Ch16;
 use fon::{Audio, Sink, Stream};
 use lewton::VorbisError;
 use lewton::audio::AudioReadError;
@@ -191,8 +190,8 @@ fn resample_mono(samples: &Vec<i16>, in_sample_rate: u32, out_sample_rate: u32) 
     // Need to copy data :/
     let in_samples = samples.to_owned();
 
-    let in_audio = Audio::<Mono16>::with_i16_buffer(in_sample_rate, in_samples);
-    let mut out_audio = Audio::<Mono16>::with_stream(out_sample_rate, &in_audio);
+    let in_audio = Audio::<Ch16, 1>::with_i16_buffer(in_sample_rate, in_samples);
+    let mut out_audio = Audio::<Ch16, 1>::with_audio(out_sample_rate, &in_audio);
 
     out_audio
         .as_i16_slice()
