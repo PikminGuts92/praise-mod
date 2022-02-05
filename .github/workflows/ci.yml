@@ -58,7 +58,7 @@ jobs:
           mkdir -p $OUTPUT_PATH
           cp ./LICENSE $OUTPUT_PATH/LICENSE -f
           cp ./README.md $OUTPUT_PATH/README.md -f
-          cp ./THIRDPARTY $OUTPUT_PATH/THIRDPARTY.md -f
+          cp ./THIRDPARTY $OUTPUT_PATH/THIRDPARTY -f
       - name: Copy executables to output directory
         shell: bash
         run: |
