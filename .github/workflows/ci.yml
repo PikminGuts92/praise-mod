@@ -58,7 +58,7 @@ jobs:
           mkdir -p $OUTPUT_PATH
           cp ./LICENSE $OUTPUT_PATH/LICENSE -f
           cp ./README.md $OUTPUT_PATH/README.md -f
-          cp ./THIRDPARTY $OUTPUT_PATH/README.md -f
+          cp ./THIRDPARTY $OUTPUT_PATH/THIRDPARTY.md -f
       - name: Copy executables to output directory
         shell: bash
         run: |
@@ -67,8 +67,8 @@ jobs:
           done
       - name: Zip files
         shell: bash
-        run: 7z a $OUTPUT_PATH/$ZIP_NAME $(find $OUTPUT_PATH -type f)
+        run: 7z a ${{ env.OUTPUT_PATH }}/$ZIP_NAME $(find $OUTPUT_PATH -type f)
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ env.ZIP_NAME }}
-          path: $OUTPUT_PATH/${{ env.ZIP_NAME }}
+          path: ${{ env.OUTPUT_PATH }}/${{ env.ZIP_NAME }}
