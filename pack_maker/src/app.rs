@@ -89,7 +89,7 @@ impl epi::App for PackApp {
 
     fn save(&mut self, _storage: &mut dyn epi::Storage) {}
 
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         //ctx.request_repaint();
 
         for f in ctx.input().raw.dropped_files.iter() {
@@ -124,7 +124,7 @@ impl epi::App for PackApp {
 
                     ui.label("Id:");
                     ui.add(egui::DragValue::new(&mut self.pack_id)
-                        .clamp_range(4..=99)
+                        .clamp_range(4..=99i32)
                         .speed(1.0)
                         .fixed_decimals(0));
 
@@ -144,7 +144,7 @@ impl epi::App for PackApp {
             });
     }
 
-    fn setup(&mut self, _ctx: &egui::CtxRef, _frame: &Frame, _storage: Option<&dyn Storage>) {}
+    fn setup(&mut self, _ctx: &egui::Context, _frame: &Frame, _storage: Option<&dyn Storage>) {}
 
     fn warm_up_enabled(&self) -> bool {
         false
