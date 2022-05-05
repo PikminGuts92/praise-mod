@@ -3,8 +3,7 @@
 
 mod app;
 use app::*;
-use eframe::{NativeOptions, run_native};
-use eframe::epi::IconData;
+use eframe::{IconData, NativeOptions, run_native};
 use image::{load_from_memory, EncodableLayout};
 
 static ICON: &'static [u8] = include_bytes!("../res/icon.png");
@@ -19,7 +18,11 @@ fn main() {
         ..NativeOptions::default()
     };
 
-    run_native(Box::new(app), ops);
+    run_native(
+        "Pack Maker for GP",
+        ops,
+        Box::new(|_cc| Box::new(app))
+    );
 }
 
 fn transform_image_to_icon(data: &[u8]) -> IconData {

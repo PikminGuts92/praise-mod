@@ -1,10 +1,11 @@
-use eframe::{egui::{self, Align2, Color32, Pos2, Widget}, epi::{self, Frame, Storage}};
+use eframe::{egui::{self, Align2, Color32, Pos2, Visuals, Widget}, glow };
 use native_dialog::{FileDialog, MessageDialog, MessageType};
 
 pub struct PackApp {
     headers: Vec<String>,
     pack_name: String,
     pack_id: u8,
+    is_dark: bool,
 }
 
 impl Default for PackApp {
@@ -18,7 +19,8 @@ impl Default for PackApp {
                 String::from("options"),
             ],
             pack_name: String::from("Custom Song Pack"),
-            pack_id: 4
+            pack_id: 4,
+            is_dark: false,
         }
     }
 }
@@ -82,15 +84,15 @@ impl PackApp {
     }
 }
 
-impl epi::App for PackApp {
-    fn name(&self) -> &str {
-        "Pack Maker for GP"
-    }
-
-    fn save(&mut self, _storage: &mut dyn epi::Storage) {}
-
-    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
+impl eframe::App for PackApp {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         //ctx.request_repaint();
+
+        // Set dark mode once
+        if !self.is_dark {
+            ctx.set_visuals(Visuals::dark());
+            self.is_dark = true;
+        }
 
         for f in ctx.input().raw.dropped_files.iter() {
             if let Some(path) = &f.path {
@@ -144,13 +146,7 @@ impl epi::App for PackApp {
             });
     }
 
-    fn setup(&mut self, _ctx: &egui::Context, _frame: &Frame, _storage: Option<&dyn Storage>) {}
-
-    fn warm_up_enabled(&self) -> bool {
-        false
-    }
-
-    fn on_exit(&mut self) {}
+    fn on_exit(&mut self, _gl: &glow::Context) {}
 
     fn auto_save_interval(&self) -> std::time::Duration {
         std::time::Duration::from_secs(30)
@@ -161,7 +157,7 @@ impl epi::App for PackApp {
         egui::Vec2::new(1024.0, 2048.0)
     }
 
-    fn clear_color(&self) -> egui::Rgba {
+    fn clear_color(&self, _visuals: &egui::Visuals) -> egui::Rgba {
         // NOTE: a bright gray makes the shadows of the windows look weird.
         // We use a bit of transparency so that if the user switches on the
         // `transparent()` option they get immediate results.
