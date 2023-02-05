@@ -146,7 +146,7 @@ impl eframe::App for PackApp {
             });
     }
 
-    fn on_exit(&mut self, _gl: &glow::Context) {}
+    fn on_exit(&mut self, _gl: Option<&glow::Context>) {}
 
     fn auto_save_interval(&self) -> std::time::Duration {
         std::time::Duration::from_secs(30)
